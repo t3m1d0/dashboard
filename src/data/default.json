@@ -1,0 +1,296 @@
+{
+  "meta": {
+    "empresa": "Grupo Franqueador",
+    "mes": "Abril",
+    "ano": 2025,
+    "geradoEm": "2025-04-27T09:00:00"
+  },
+  "visaoGeral": {
+    "chamadosAtendidos": { "valor": 847, "anterior": 793, "meta": 900 },
+    "slaMedia": { "valor": 94.7, "anterior": 91.2, "meta": 95 },
+    "resolucaoPrimeiroAtendimento": { "valor": 68.3, "anterior": 64.1, "meta": 70 },
+    "chamadosCriticos": { "valor": 12, "anterior": 19, "meta": 15 },
+    "usuariosAtendidos": { "valor": 312, "anterior": 298 },
+    "franquiasAtendidas": { "valor": 87, "anterior": 82 },
+    "entregasDesenvolvimento": { "valor": 23, "anterior": 18 },
+    "projetosAndamento": { "valor": 9, "anterior": 11 },
+    "satisfacaoInterna": { "valor": 4.6, "anterior": 4.3, "escala": 5 }
+  },
+  "sustentacao": {
+    "porCategoria": [
+      { "categoria": "ERP", "total": 187, "cor": "#3b82f6" },
+      { "categoria": "Infraestrutura", "total": 134, "cor": "#8b5cf6" },
+      { "categoria": "Office 365", "total": 98, "cor": "#06b6d4" },
+      { "categoria": "PDV", "total": 92, "cor": "#f59e0b" },
+      { "categoria": "Rede", "total": 76, "cor": "#10b981" },
+      { "categoria": "Fiscal", "total": 68, "cor": "#ef4444" },
+      { "categoria": "Financeiro", "total": 54, "cor": "#ec4899" },
+      { "categoria": "Impressoras", "total": 49, "cor": "#f97316" },
+      { "categoria": "WhatsApp/API", "total": 43, "cor": "#22c55e" },
+      { "categoria": "Cadastro", "total": 46, "cor": "#a78bfa" }
+    ],
+    "top15Assuntos": [
+      { "rank": 1, "assunto": "Lentidão no ERP", "total": 89, "tendencia": "down" },
+      { "rank": 2, "assunto": "Reset de senha", "total": 76, "tendencia": "stable" },
+      { "rank": 3, "assunto": "Impressora sem papel/toner", "total": 49, "tendencia": "down" },
+      { "rank": 4, "assunto": "PDV travado", "total": 47, "tendencia": "up" },
+      { "rank": 5, "assunto": "Erro nota fiscal", "total": 44, "tendencia": "down" },
+      { "rank": 6, "assunto": "VPN não conecta", "total": 38, "tendencia": "stable" },
+      { "rank": 7, "assunto": "E-mail não sincroniza", "total": 36, "tendencia": "stable" },
+      { "rank": 8, "assunto": "Teams com falha", "total": 31, "tendencia": "up" },
+      { "rank": 9, "assunto": "Acesso bloqueado", "total": 29, "tendencia": "down" },
+      { "rank": 10, "assunto": "Integração API WhatsApp", "total": 27, "tendencia": "up" },
+      { "rank": 11, "assunto": "Lentidão na rede", "total": 24, "tendencia": "down" },
+      { "rank": 12, "assunto": "Relatório ERP incorreto", "total": 22, "tendencia": "stable" },
+      { "rank": 13, "assunto": "Backup falhou", "total": 19, "tendencia": "down" },
+      { "rank": 14, "assunto": "Caixa PDV offline", "total": 18, "tendencia": "up" },
+      { "rank": 15, "assunto": "Certificado digital vencido", "total": 16, "tendencia": "stable" }
+    ],
+    "evolucaoSemanal": {
+      "semanas": ["Semana 1", "Semana 2", "Semana 3", "Semana 4"],
+      "abertos": [214, 198, 227, 208],
+      "resolvidos": [208, 195, 219, 204],
+      "backlog": [18, 21, 29, 26]
+    },
+    "sla": {
+      "tempoMedioAtendimento": "1h 24min",
+      "tempoMedioResolucao": "4h 12min",
+      "taxaDentroSLA": 94.7,
+      "foraDoSLA": 5.3
+    },
+    "eficiencia": {
+      "reincidencia": 8.2,
+      "chamadosEvitados": 124,
+      "automacoesImplementadas": 7,
+      "ganhoOperacionalHoras": 312
+    }
+  },
+  "desenvolvimento": {
+    "projetos": [
+      {
+        "id": 1, "titulo": "Módulo de Relatórios BI",
+        "descricao": "Dashboard analítico para franqueados acompanharem KPIs em tempo real",
+        "responsavel": "Carlos M.", "prioridade": "Alta", "prazo": "2025-05-15",
+        "progresso": 72, "status": "desenvolvimento",
+        "tags": ["BI", "Frontend", "API"]
+      },
+      {
+        "id": 2, "titulo": "Integração ERP ↔ E-commerce",
+        "descricao": "Sincronização automática de estoque e pedidos entre plataformas",
+        "responsavel": "Ana L.", "prioridade": "Alta", "prazo": "2025-05-30",
+        "progresso": 48, "status": "desenvolvimento",
+        "tags": ["ERP", "API", "Integração"]
+      },
+      {
+        "id": 3, "titulo": "Portal do Franqueado",
+        "descricao": "Área exclusiva para gestão e comunicação com franquias",
+        "responsavel": "Pedro S.", "prioridade": "Média", "prazo": "2025-06-20",
+        "progresso": 31, "status": "desenvolvimento",
+        "tags": ["Portal", "Web"]
+      },
+      {
+        "id": 4, "titulo": "Automação Fiscal SPED",
+        "descricao": "Geração automática de obrigações fiscais integrada ao ERP",
+        "responsavel": "Juliana R.", "prioridade": "Crítica", "prazo": "2025-04-30",
+        "progresso": 88, "status": "homologacao",
+        "tags": ["Fiscal", "Automação"]
+      },
+      {
+        "id": 5, "titulo": "App Mobile Gestor",
+        "descricao": "Aplicativo para gestores acompanharem indicadores pelo celular",
+        "responsavel": "Rafael T.", "prioridade": "Média", "prazo": "2025-07-10",
+        "progresso": 55, "status": "homologacao",
+        "tags": ["Mobile", "iOS", "Android"]
+      },
+      {
+        "id": 6, "titulo": "Bot IA Atendimento",
+        "descricao": "Assistente inteligente para triagem e resolução de chamados N1",
+        "responsavel": "Carlos M.", "prioridade": "Alta", "prazo": "2025-05-10",
+        "progresso": 91, "status": "validacao",
+        "tags": ["IA", "Automação", "Atendimento"]
+      },
+      {
+        "id": 7, "titulo": "Módulo LGPD Compliance",
+        "descricao": "Controle de consentimentos e gestão de dados pessoais",
+        "responsavel": "Ana L.", "prioridade": "Alta", "prazo": "2025-04-28",
+        "progresso": 97, "status": "validacao",
+        "tags": ["LGPD", "Segurança", "Compliance"]
+      },
+      {
+        "id": 8, "titulo": "Dashboard TI Executivo",
+        "descricao": "Painel gerencial de resultados mensais para diretoria",
+        "responsavel": "Pedro S.", "prioridade": "Média", "prazo": "2025-04-27",
+        "progresso": 100, "status": "producao",
+        "tags": ["Dashboard", "BI"]
+      },
+      {
+        "id": 9, "titulo": "Monitoramento Infraestrutura",
+        "descricao": "Sistema de alertas e monitoramento 24/7 de servidores e rede",
+        "responsavel": "Juliana R.", "prioridade": "Alta", "prazo": "2025-04-20",
+        "progresso": 100, "status": "producao",
+        "tags": ["Infra", "Monitoramento"]
+      },
+      {
+        "id": 10, "titulo": "Integração Meta Ads",
+        "descricao": "Automação de campanhas e relatórios via Meta Business API",
+        "responsavel": "Rafael T.", "prioridade": "Baixa", "prazo": "2025-08-01",
+        "progresso": 0, "status": "backlog",
+        "tags": ["Marketing", "API", "Meta"]
+      },
+      {
+        "id": 11, "titulo": "Automação Financeira DRE",
+        "descricao": "Geração automatizada de DRE consolidado por franquia",
+        "responsavel": "Carlos M.", "prioridade": "Média", "prazo": "2025-07-15",
+        "progresso": 5, "status": "backlog",
+        "tags": ["Financeiro", "Automação"]
+      }
+    ]
+  },
+  "entregasEstrategicas": [
+    {
+      "titulo": "Bot de IA para Atendimento N1",
+      "descricao": "Implementação de assistente inteligente que resolve automaticamente chamados de nível 1, reduzindo carga da equipe em 34%",
+      "impacto": "Alto",
+      "areaBeneficiada": "TI / Operações",
+      "ganhoEstimado": "312h/mês economizadas",
+      "status": "Concluído",
+      "data": "2025-04-15",
+      "icone": "bot",
+      "cor": "#3b82f6"
+    },
+    {
+      "titulo": "Módulo LGPD Compliance",
+      "descricao": "Sistema completo de gestão de consentimentos e dados pessoais conforme Lei 13.709/2018",
+      "impacto": "Crítico",
+      "areaBeneficiada": "Jurídico / TI",
+      "ganhoEstimado": "Eliminação de risco jurídico",
+      "status": "Em validação",
+      "data": "2025-04-28",
+      "icone": "shield",
+      "cor": "#10b981"
+    },
+    {
+      "titulo": "Monitoramento 24/7 de Infraestrutura",
+      "descricao": "Plataforma de monitoramento proativo com alertas automáticos — 99,7% de disponibilidade alcançada",
+      "impacto": "Alto",
+      "areaBeneficiada": "Infraestrutura / Negócio",
+      "ganhoEstimado": "Uptime 99,7%",
+      "status": "Concluído",
+      "data": "2025-04-20",
+      "icone": "activity",
+      "cor": "#8b5cf6"
+    },
+    {
+      "titulo": "Integração ERP ↔ Franquias",
+      "descricao": "Sincronização automática de dados entre o ERP central e os sistemas das 87 franquias",
+      "impacto": "Alto",
+      "areaBeneficiada": "Operações / Franquias",
+      "ganhoEstimado": "R$ 18.400/mês em retrabalho",
+      "status": "Concluído",
+      "data": "2025-04-10",
+      "icone": "git-merge",
+      "cor": "#f59e0b"
+    },
+    {
+      "titulo": "Dashboard Executivo TI",
+      "descricao": "Painel gerencial completo para apresentação de resultados mensais à diretoria",
+      "impacto": "Médio",
+      "areaBeneficiada": "Diretoria / TI",
+      "ganhoEstimado": "Visibilidade estratégica",
+      "status": "Concluído",
+      "data": "2025-04-27",
+      "icone": "bar-chart-2",
+      "cor": "#ec4899"
+    },
+    {
+      "titulo": "Automação Backup Franquias",
+      "descricao": "Rotina automatizada de backup diário com criptografia AES-256 para todas as franquias",
+      "impacto": "Alto",
+      "areaBeneficiada": "Segurança / Operações",
+      "ganhoEstimado": "Zero perda de dados",
+      "status": "Concluído",
+      "data": "2025-04-05",
+      "icone": "database",
+      "cor": "#06b6d4"
+    }
+  ],
+  "visaoEstrategica": {
+    "franquiasSuportadas": 87,
+    "disponibilidadeSistemas": 99.7,
+    "incidentesCriticosEvitados": 23,
+    "horasEconomizidasAutomacao": 312,
+    "reducaoCustosEstimada": 42800,
+    "crescimentoOperacao": 14.3,
+    "projetosEntregues": 23,
+    "scoreSeguranca": 87,
+    "saudeInfraestrutura": 94,
+    "evolucaoDisponibilidade": [97.2, 98.1, 98.8, 99.1, 99.4, 99.7],
+    "meses": ["Nov", "Dez", "Jan", "Fev", "Mar", "Abr"]
+  },
+  "roadmap": [
+    {
+      "titulo": "BI para Franqueados",
+      "descricao": "Dashboard analítico com KPIs de cada franquia",
+      "categoria": "Próximas Entregas",
+      "prazo": "Mai/2025",
+      "prioridade": "Alta",
+      "impacto": "Decisão estratégica por dados"
+    },
+    {
+      "titulo": "Integração ERP/E-commerce",
+      "descricao": "Sincronização automática estoque e pedidos",
+      "categoria": "Próximas Entregas",
+      "prazo": "Mai/2025",
+      "prioridade": "Alta",
+      "impacto": "Eliminar retrabalho manual"
+    },
+    {
+      "titulo": "App Mobile Gestor",
+      "descricao": "App iOS/Android para acompanhamento de indicadores",
+      "categoria": "Próximas Entregas",
+      "prazo": "Jul/2025",
+      "prioridade": "Média",
+      "impacto": "Mobilidade para liderança"
+    },
+    {
+      "titulo": "Automação Financeira DRE",
+      "descricao": "DRE consolidado automático por franquia",
+      "categoria": "Melhorias Planejadas",
+      "prazo": "Jul/2025",
+      "prioridade": "Alta",
+      "impacto": "Redução de 80h/mês análise"
+    },
+    {
+      "titulo": "Melhorias LGPD — Fase 2",
+      "descricao": "Portal de gestão de dados pessoais para titulares",
+      "categoria": "Melhorias Planejadas",
+      "prazo": "Jun/2025",
+      "prioridade": "Média",
+      "impacto": "Conformidade total ANPD"
+    },
+    {
+      "titulo": "SOC — Centro de Operações de Segurança",
+      "descricao": "SIEM + EDR + correlação de eventos em tempo real",
+      "categoria": "Projetos Futuros",
+      "prazo": "Set/2025",
+      "prioridade": "Alta",
+      "impacto": "Proteção nível enterprise"
+    },
+    {
+      "titulo": "IA para Análise Preditiva",
+      "descricao": "ML para prever falhas e otimizar operações",
+      "categoria": "Projetos Futuros",
+      "prazo": "Out/2025",
+      "prioridade": "Média",
+      "impacto": "Manutenção preditiva"
+    },
+    {
+      "titulo": "Integração Meta & Google APIs",
+      "descricao": "Automação de campanhas e relatórios de marketing",
+      "categoria": "Iniciativas Estratégicas",
+      "prazo": "Ago/2025",
+      "prioridade": "Baixa",
+      "impacto": "ROI marketing digital"
+    }
+  ]
+}
