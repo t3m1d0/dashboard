@@ -131,3 +131,98 @@ export interface DashboardData {
 }
 
 export type Section = 'overview' | 'sustentacao' | 'desenvolvimento' | 'entregas' | 'estrategica' | 'roadmap'
+
+// ── Redmine Types ─────────────────────────────────────────────
+export interface RedmineConfig {
+  id: string
+  url: string
+  ativo: boolean
+  ultimo_sync: string | null
+  sync_interval_min: number
+  configurado: boolean
+}
+
+export interface RedmineProjeto {
+  id: string
+  redmine_id: number
+  identificador: string
+  nome: string
+  descricao?: string
+  ativo: boolean
+  sincronizar: boolean
+}
+
+export interface RedmineTarefa {
+  id: string
+  redmine_id: number
+  projeto_id: string
+  assunto: string
+  descricao?: string
+  status: string
+  prioridade: string
+  prioridade_id: number
+  tracker?: string
+  responsavel?: string
+  responsavel_id?: number
+  categoria?: string
+  versao?: string
+  estimativa_horas?: number
+  horas_gastas?: number
+  progresso: number
+  tags: string[]
+  data_inicio?: string
+  data_prazo?: string
+  data_criacao?: string
+  data_fechamento?: string
+  atrasada: boolean
+  sincronizado_em: string
+  comentarios?: RedmineComentario[]
+}
+
+export interface RedmineComentario {
+  id: string
+  autor: string
+  texto: string
+  criado_em: string
+}
+
+export interface RedmineMembro {
+  membro_id: number
+  nome: string
+  abertas: number
+  em_andamento: number
+  concluidas: number
+  atrasadas: number
+  horas_gastas: number
+  taxa_conclusao: number
+  tempo_medio?: number
+}
+
+export interface RedmineDashboard {
+  configurado: boolean
+  ultimo_sync: string | null
+  kpis: {
+    abertas: number
+    em_andamento: number
+    concluidas: number
+    atrasadas: number
+    horas_gastas: number
+    horas_estimadas: number
+    tempo_medio_resolucao?: number
+  }
+  burndown: Array<{ data: string; dia: string; abertas?: number; em_andamento?: number; concluidas?: number; atrasadas?: number }>
+  por_status: Array<{ status: string; total: number }>
+  por_prioridade: Array<{ prioridade: string; total: number }>
+  equipe: RedmineMembro[]
+  atrasadas: RedmineTarefa[]
+}
+
+export interface RedmineFiltros {
+  status: string[]
+  prioridades: string[]
+  responsaveis: string[]
+  versoes: string[]
+  trackers: string[]
+}
+
+export type DevSubSection = 'dashboard' | 'tarefas' | 'equipe' | 'config'

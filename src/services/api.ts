@@ -104,3 +104,39 @@ export const UploadsAPI = {
   },
   list: () => request<any[]>('/uploads'),
 }
+
+// ── Redmine ───────────────────────────────────────────────────
+export const RedmineAPI = {
+  getConfig: () => request<any>('/redmine/config'),
+
+  saveConfig: (data: { url: string; api_key: string; sync_interval_min: number }) =>
+    request('/redmine/config', { method: 'POST', body: JSON.stringify(data) }),
+
+  deleteConfig: () => request('/redmine/config', { method: 'DELETE' }),
+
+  sync: (tipo = 'manual', force_full = false) =>
+    request<any>(`/redmine/sync?tipo=${tipo}&force_full=${force_full}`, { method: 'POST' }),
+
+  getSyncLogs: (limit = 20) => request<any[]>(`/redmine/sync/logs?limit=${limit}`),
+
+  getProjetos: () => request<any[]>('/redmine/projetos'),
+
+  updateProjeto: (id: string, sincronizar: boolean) =>
+    request(`/redmine/projetos/${id}?sincronizar=${sincronizar}`, { method: 'PATCH' }),
+
+  getDashboard: () => request<any>('/redmine/dashboard'),
+
+  getTarefas: (params?: Record<string, string | number | boolean>) => {
+    const q = params ? '?' + new URLSearchParams(params as any).toString() : ''
+    return request<any>(`/redmine/tarefas${q}`)
+  },
+
+  getKanban: (params?: Record<string, string>) => {
+    const q = params ? '?' + new URLSearchParams(params).toString() : ''
+    return request<Record<string, any[]>>(`/redmine/tarefas/kanban${q}`)
+  },
+
+  getTarefa: (id: string) => request<any>(`/redmine/tarefas/${id}`),
+
+  getFiltros: () => request<any>('/redmine/filtros'),
+}
