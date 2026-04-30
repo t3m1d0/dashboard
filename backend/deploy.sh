@@ -12,7 +12,7 @@ echo "╚═══════════════════════�
 # ── Variáveis — AJUSTE ANTES DE RODAR ──
 DB_NAME="dashboard_db"
 DB_USER="dashboard_user"
-DB_PASS="TROQUE_SENHA_FORTE_AQUI"
+DB_PASS="Mun1zT3ch#@!"
 APP_DIR="/var/www/dashboard"
 BACKEND_DIR="/opt/dashboard-api"
 REPO="https://github.com/t3m1d0/dashboard.git"
