@@ -1,188 +1,243 @@
-# 🚀 Muniz Strategic Center — Sistema Completo v2.0
+# 🚀 Muniz Strategic Center — Dashboard Executivo v2.0
 
-Dashboard Executivo de TI com backend FastAPI + PostgreSQL + frontend React/TypeScript.
-
----
-
-## 📁 Estrutura do Repositório
-
-```
-/
-├── dashboard/              ← Frontend React + Vite + TypeScript
-│   ├── src/
-│   │   ├── components/     ← Layout, KPI, Upload, UI
-│   │   ├── pages/          ← 6 seções do dashboard + Login
-│   │   ├── services/       ← Cliente HTTP (api.ts)
-│   │   ├── store/          ← Estado global (Zustand)
-│   │   ├── types/          ← TypeScript types
-│   │   └── utils/          ← Helpers e constantes
-│   ├── .env.development    ← VITE_API_URL=http://localhost:8000/api
-│   └── .env.production     ← VITE_API_URL=/api
-│
-├── backend/                ← API FastAPI + SQLAlchemy + PostgreSQL
-│   ├── app/
-│   │   ├── core/           ← Config, Database, Security (JWT)
-│   │   ├── models/         ← SQLAlchemy models (7 tabelas)
-│   │   ├── schemas/        ← Pydantic v2 schemas
-│   │   ├── services/       ← Regras de negócio
-│   │   └── routers/        ← Endpoints REST
-│   ├── migrations/         ← Alembic migrations
-│   ├── data/               ← default.json (dados iniciais)
-│   ├── main.py             ← Entry point FastAPI
-│   ├── seed.py             ← Popula banco com dados iniciais
-│   ├── deploy.sh           ← Setup completo na VM (rodar 1x)
-│   └── update.sh           ← Atualização após git push
-│
-└── README.md
-```
+> Sistema profissional, modular e escalável para gestão executiva de TI.  
+> Refatorado de um único arquivo HTML/JS para arquitetura React enterprise.
 
 ---
 
-## ⚡ Setup Local (Desenvolvimento)
+## 📐 Arquitetura
+
+```
+src/
+├── components/
+│   ├── Layout/
+│   │   ├── AppShell.tsx       # Shell principal (sidebar + topbar + conteúdo)
+│   │   ├── Sidebar.tsx        # Navegação lateral
+│   │   └── Topbar.tsx         # Header com ações (tema, export, upload)
+│   ├── KPI/
+│   │   └── KPICard.tsx        # Card reutilizável de indicador
+│   ├── UI/
+│   │   └── Loader.tsx         # Tela de carregamento inicial
+│   └── Upload/
+│       └── UploadModal.tsx    # Modal de importação de dados
+├── pages/
+│   ├── OverviewPage.tsx       # Visão Geral Executiva
+│   ├── SustentacaoPage.tsx    # Chamados, SLA, eficiência
+│   ├── DesenvolvimentoPage.tsx# Board Kanban de projetos
+│   ├── EntregasPage.tsx       # Entregas estratégicas
+│   ├── EstrategicaPage.tsx    # Visão estratégica / valor do TI
+│   └── RoadmapPage.tsx        # Roadmap e planejamento
+├── store/
+│   └── index.ts               # Estado global (Zustand + persist)
+├── types/
+│   └── index.ts               # TypeScript types completos
+├── utils/
+│   └── index.ts               # Formatadores, helpers, constantes
+├── styles/
+│   └── globals.css            # CSS variables + Tailwind base
+├── data/
+│   └── default.json           # Dados padrão do dashboard
+├── App.tsx                    # Root component
+└── main.tsx                   # Entry point
+```
+
+---
+
+## 🛠 Stack Tecnológica
+
+| Camada       | Tecnologia                                    |
+|--------------|-----------------------------------------------|
+| Framework    | React 18 + TypeScript                         |
+| Build        | Vite 5                                        |
+| Estilos      | Tailwind CSS 3 + CSS Variables                |
+| Estado       | Zustand (persist middleware)                  |
+| Gráficos     | Recharts                                      |
+| Ícones       | Lucide React                                  |
+| Fontes       | DM Sans + Bebas Neue + JetBrains Mono         |
+
+---
+
+## 🚀 Como Rodar
 
 ### Pré-requisitos
-- Node.js 20+
-- Python 3.11+
-- PostgreSQL 15+
+- Node.js 18+
+- npm 9+
 
-### 1. Banco de dados
+### Desenvolvimento
+
 ```bash
-psql -U postgres
-CREATE USER dashboard_user WITH PASSWORD 'senha123';
-CREATE DATABASE dashboard_db OWNER dashboard_user;
-\q
-```
-
-### 2. Backend
-```bash
-cd backend
-python -m venv venv
-source venv/bin/activate          # Windows: venv\Scripts\activate
-pip install -r requirements.txt
-
-# Criar .env
-cp .env.example .env
-# Edite .env com suas credenciais
-
-# Rodar migrations
-alembic upgrade head
-
-# Popular banco com dados iniciais
-python seed.py
-
-# Iniciar servidor
-uvicorn main:app --reload --port 8000
-# API Docs: http://localhost:8000/api/docs
-```
-
-### 3. Frontend
-```bash
-cd dashboard
+# 1. Instalar dependências
 npm install
+
+# 2. Iniciar servidor de desenvolvimento
 npm run dev
-# App: http://localhost:5173
+
+# 3. Abrir no navegador
+# http://localhost:5173
 ```
 
-**Login inicial:** `admin@muniz.com` / `Admin@2025!`
+### Produção
 
----
-
-## 🚀 Deploy na VM Hostinger
-
-### Primeira vez (setup completo)
 ```bash
-# Na VM via SSH
-git clone https://github.com/t3m1d0/dashboard.git /var/www/dashboard
-cd /var/www/dashboard/backend
+# Build otimizado
+npm run build
 
-# Edite a senha do banco antes de rodar
-nano deploy.sh   # linha DB_PASS=
-
-bash deploy.sh
-```
-
-### Atualizações futuras
-```bash
-# Na VM via SSH
-bash /opt/dashboard-api/update.sh
+# Pré-visualizar build
+npm run preview
 ```
 
 ---
 
-## 🗄 Banco de Dados — Tabelas
+## 🗄 Banco de Dados — Modelagem Inicial (PostgreSQL)
 
-| Tabela         | Descrição                              |
-|----------------|----------------------------------------|
-| `empresas`     | Multi-empresa / franqueador            |
-| `franquias`    | Unidades franqueadas                   |
-| `usuarios`     | Autenticação + roles (viewer/editor/admin) |
-| `chamados`     | Tickets de sustentação + SLA           |
-| `projetos`     | Board Kanban com status + progresso    |
-| `kpi_snapshots`| Métricas mensais históricas (JSON)     |
-| `uploads`      | Rastreamento de arquivos importados    |
-| `audit_logs`   | Log de todas as ações dos usuários     |
+```sql
+-- Usuários e autenticação
+CREATE TABLE usuarios (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  nome        VARCHAR(100) NOT NULL,
+  email       VARCHAR(150) UNIQUE NOT NULL,
+  senha_hash  TEXT NOT NULL,
+  cargo       VARCHAR(80),
+  empresa_id  UUID REFERENCES empresas(id),
+  permissoes  JSONB DEFAULT '{}',
+  ativo       BOOLEAN DEFAULT true,
+  criado_em   TIMESTAMP DEFAULT NOW(),
+  atualizado_em TIMESTAMP DEFAULT NOW()
+);
+
+-- Empresas / franqueador
+CREATE TABLE empresas (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  nome        VARCHAR(150) NOT NULL,
+  slug        VARCHAR(80) UNIQUE NOT NULL,
+  plano       VARCHAR(30) DEFAULT 'standard',
+  criado_em   TIMESTAMP DEFAULT NOW()
+);
+
+-- Franquias
+CREATE TABLE franquias (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  empresa_id  UUID REFERENCES empresas(id),
+  nome        VARCHAR(150) NOT NULL,
+  cidade      VARCHAR(100),
+  uf          CHAR(2),
+  ativo       BOOLEAN DEFAULT true
+);
+
+-- Chamados (Sustentação)
+CREATE TABLE chamados (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  titulo        VARCHAR(200) NOT NULL,
+  descricao     TEXT,
+  categoria     VARCHAR(80),
+  prioridade    VARCHAR(20) DEFAULT 'media',
+  status        VARCHAR(30) DEFAULT 'aberto',
+  usuario_id    UUID REFERENCES usuarios(id),
+  franquia_id   UUID REFERENCES franquias(id),
+  sla_prazo     TIMESTAMP,
+  resolvido_em  TIMESTAMP,
+  criado_em     TIMESTAMP DEFAULT NOW()
+);
+
+-- Projetos (Desenvolvimento)
+CREATE TABLE projetos (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  titulo        VARCHAR(200) NOT NULL,
+  descricao     TEXT,
+  responsavel_id UUID REFERENCES usuarios(id),
+  prioridade    VARCHAR(20) DEFAULT 'media',
+  prazo         DATE,
+  progresso     SMALLINT DEFAULT 0 CHECK (progresso BETWEEN 0 AND 100),
+  status        VARCHAR(30) DEFAULT 'backlog',
+  empresa_id    UUID REFERENCES empresas(id),
+  criado_em     TIMESTAMP DEFAULT NOW(),
+  atualizado_em TIMESTAMP DEFAULT NOW()
+);
+
+-- KPIs histórico
+CREATE TABLE kpi_snapshots (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  empresa_id    UUID REFERENCES empresas(id),
+  periodo       VARCHAR(20),  -- '2025-04'
+  dados         JSONB NOT NULL,
+  criado_em     TIMESTAMP DEFAULT NOW()
+);
+
+-- Logs de auditoria
+CREATE TABLE audit_logs (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  usuario_id  UUID REFERENCES usuarios(id),
+  acao        VARCHAR(100) NOT NULL,
+  entidade    VARCHAR(80),
+  entidade_id UUID,
+  dados       JSONB,
+  ip          VARCHAR(45),
+  criado_em   TIMESTAMP DEFAULT NOW()
+);
+```
 
 ---
 
-## 🔌 API Endpoints
+## 🔌 API Backend — FastAPI (Futuro)
 
 ```
-POST   /api/auth/login          → JWT token
-GET    /api/auth/me             → Usuário logado
-POST   /api/auth/register       → Criar usuário
+/backend
+├── main.py                   # Entry point FastAPI
+├── /routers
+│   ├── auth.py               # Login, JWT, refresh
+│   ├── dashboard.py          # KPIs, overview
+│   ├── chamados.py           # CRUD chamados
+│   ├── projetos.py           # CRUD projetos
+│   └── uploads.py            # Parse CSV/XLSX
+├── /models
+│   ├── usuario.py
+│   ├── chamado.py
+│   └── projeto.py
+├── /services
+│   ├── database.py           # SQLAlchemy + Alembic
+│   ├── auth.py               # JWT utils
+│   └── parser.py             # CSV/XLSX parser
+├── requirements.txt
+└── Dockerfile
+```
 
-GET    /api/dashboard/overview  → Payload completo do dashboard
+### Endpoints principais
 
-GET    /api/chamados            → Listar chamados (filtros + paginação)
-POST   /api/chamados            → Criar chamado
-PATCH  /api/chamados/{id}       → Atualizar chamado
-GET    /api/chamados/stats      → Estatísticas consolidadas
-
-GET    /api/projetos            → Listar projetos
-GET    /api/projetos/kanban     → Board agrupado por status
-POST   /api/projetos            → Criar projeto
-PATCH  /api/projetos/{id}       → Atualizar projeto
-DELETE /api/projetos/{id}       → Remover projeto
-
-GET    /api/kpis/latest         → Snapshot mais recente
-GET    /api/kpis/historico      → Histórico de snapshots
-POST   /api/kpis                → Criar/atualizar snapshot
-
-POST   /api/uploads             → Upload CSV/XLSX (tipo obrigatório)
-GET    /api/uploads             → Listar uploads
-
-GET    /api/health              → Status da API
+```
+POST   /auth/login             → JWT token
+GET    /dashboard/overview     → KPIs consolidados
+GET    /dashboard/sustentacao  → Chamados + SLA
+GET    /dashboard/projetos     → Board projetos
+POST   /uploads/parse          → Parse arquivo
+GET    /kpis/historico         → Série temporal
 ```
 
 ---
 
-## 🔐 Roles e Permissões
+## 📦 Escalabilidade — Próximos Passos
 
-| Role         | Acesso                              |
-|--------------|-------------------------------------|
-| `viewer`     | Leitura apenas                      |
-| `editor`     | Criar e editar chamados e projetos  |
-| `admin`      | Tudo + gerenciar usuários           |
-| `superadmin` | Acesso total multi-empresa          |
-
----
-
-## 🛠 Stack Completa
-
-| Camada     | Tecnologia                              |
-|------------|-----------------------------------------|
-| Frontend   | React 18 + TypeScript + Vite 5          |
-| Estilos    | Tailwind CSS + CSS Variables            |
-| Estado     | Zustand (persist)                       |
-| Gráficos   | Recharts                                |
-| Backend    | Python 3.11 + FastAPI 0.111             |
-| ORM        | SQLAlchemy 2.0 (async)                  |
-| Migrations | Alembic                                 |
-| Banco      | PostgreSQL 15                           |
-| Auth       | JWT (python-jose + passlib/bcrypt)      |
-| Servidor   | Nginx + Uvicorn (2 workers)             |
-| Process    | systemd                                 |
+- [ ] Autenticação JWT + rotas protegidas
+- [ ] Multi-empresa (tenant isolation)
+- [ ] API real com FastAPI + PostgreSQL
+- [ ] TanStack Query para cache de requisições
+- [ ] React Router para rotas dedicadas por seção
+- [ ] PWA + Service Worker
+- [ ] Notificações em tempo real (WebSocket)
+- [ ] Relatórios PDF gerados no servidor
+- [ ] Integração Meta Ads API
+- [ ] Painel de permissões por usuário
 
 ---
 
-*Muniz Strategic Center © 2025*
+## 🎨 Decisões de Design
+
+1. **CSS Variables** — Toda a paleta via variáveis CSS para suporte a temas
+2. **Zustand + persist** — Estado global simples, sem boilerplate Redux
+3. **Recharts** — Gráficos declarativos, responsivos, bem integrados ao React
+4. **Lucide React** — Ícones consistentes e leves (tree-shakeable)
+5. **Componentes reutilizáveis** — KPICard, StatusBadge separados e tipados
+6. **Separação de responsabilidades** — Pages > Components > Utils/Store
+
+---
+
+*Gerado em Abril/2025 — Muniz Strategic Center*

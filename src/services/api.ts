@@ -140,3 +140,13 @@ export const RedmineAPI = {
 
   getFiltros: () => request<any>('/redmine/filtros'),
 }
+
+// ── Redmine — Entregas e Roadmap ──────────────────────────────
+export const RedmineEntregasAPI = {
+  getEntregas: (params?: { projeto_id?: string; limit?: number }) => {
+    const q = params ? '?' + new URLSearchParams(params as any).toString() : ''
+    return request<{ configurado: boolean; items: any[] }>(`/redmine/entregas${q}`)
+  },
+  getRoadmap: () =>
+    request<{ configurado: boolean; items: any[]; sprints: string[]; ultimo_sync: string | null }>('/redmine/roadmap'),
+}

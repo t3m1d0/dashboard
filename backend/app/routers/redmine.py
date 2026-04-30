@@ -518,3 +518,207 @@ def _tarefa_to_dict(t: RedmineTarefa) -> dict:
         "atrasada":         t.atrasada,
         "sincronizado_em":  t.sincronizado_em.isoformat() if t.sincronizado_em else None,
     }
+
+
+# ── Entregas (tarefas concluídas → cards de entrega) ──────────
+@router.get("/entregas")
+async def get_entregas(
+    limit: int = Query(30, le=100),
+    projeto_id: Optional[str] = Query(None),
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    """
+    Retorna tarefas concluídas do Redmine formatadas como Entregas Estratégicas.
+    Fallback: retorna lista vazia se Redmine não configurado (frontend usa JSON estático).
+    """
+    from app.services.redmine.metrics import CLOSED_STATUSES
+
+    empresa_id = current_user.empresa_id
+
+    # Verifica se Redmine está configurado
+    cfg = await db.execute(
+        select(RedmineConfig).where(
+            and_(RedmineConfig.empresa_id == empresa_id, RedmineConfig.ativo == True)
+        )
+    )
+    if not cfg.scalar_one_or_none():
+        return {"configurado": False, "items": []}
+
+    filters = [
+        RedmineTarefa.empresa_id == empresa_id,
+        RedmineTarefa.status.in_(list(CLOSED_STATUSES)),
+    ]
+    if projeto_id:
+        try:
+            filters.append(RedmineTarefa.projeto_id == uuid.UUID(projeto_id))
+        except ValueError:
+            pass
+
+    q = (
+        select(RedmineTarefa, RedmineProjeto.nome.label("projeto_nome"))
+        .join(RedmineProjeto, RedmineTarefa.projeto_id == RedmineProjeto.id)
+        .where(and_(*filters))
+        .order_by(desc(RedmineTarefa.data_fechamento))
+        .limit(limit)
+    )
+    rows = (await db.execute(q)).all()
+
+    # Mapeia tracker → ícone/cor padrão
+    TRACKER_ICON = {
+        "Bug": "bug", "Feature": "star", "Task": "check-square",
+        "Melhoria": "trending-up", "Suporte": "headphones",
+    }
+    TRACKER_COR = {
+        "Bug": "#ef4444", "Feature": "#8b5cf6", "Task": "#3b82f6",
+        "Melhoria": "#10b981", "Suporte": "#06b6d4",
+    }
+    PRIO_IMPACTO = {
+        "Urgente": "Crítico", "Alta": "Alto", "Normal": "Médio", "Baixa": "Baixo", "Imediata": "Crítico",
+    }
+
+    items = []
+    for row in rows:
+        t: RedmineTarefa = row[0]
+        proj_nome: str   = row[1]
+
+        cor   = TRACKER_COR.get(t.tracker or "", "#8b5cf6")
+        icone = TRACKER_ICON.get(t.tracker or "", "check-square")
+
+        # Ganho estimado: horas gastas ou estimativa
+        if t.horas_gastas and t.horas_gastas > 0:
+            ganho = f"{t.horas_gastas:.0f}h investidas"
+        elif t.estimativa_horas and t.estimativa_horas > 0:
+            ganho = f"{t.estimativa_horas:.0f}h estimadas"
+        else:
+            ganho = "Entregue"
+
+        items.append({
+            "id":             str(t.id),
+            "redmine_id":     t.redmine_id,
+            "titulo":         t.assunto,
+            "descricao":      (t.descricao or "")[:300] if t.descricao else f"Tarefa #{t.redmine_id} do projeto {proj_nome}",
+            "impacto":        PRIO_IMPACTO.get(t.prioridade, "Médio"),
+            "areaBeneficiada": proj_nome,
+            "ganhoEstimado":  ganho,
+            "status":         "Concluído",
+            "data":           t.data_fechamento.isoformat() if t.data_fechamento else t.sincronizado_em.isoformat(),
+            "icone":          icone,
+            "cor":            cor,
+            "tracker":        t.tracker,
+            "responsavel":    t.responsavel_nome,
+            "versao":         t.versao,
+            "horas_gastas":   t.horas_gastas,
+            "projeto":        proj_nome,
+            "redmine_url":    None,  # populado pelo frontend com a URL base
+        })
+
+    return {"configurado": True, "items": items}
+
+
+# ── Roadmap (tarefas em aberto por versão/sprint) ─────────────
+@router.get("/roadmap")
+async def get_roadmap(
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    """
+    Deriva o Roadmap a partir das tarefas abertas do Redmine.
+    Agrupa por versão/sprint → categoria do roadmap.
+    Fallback: retorna lista vazia se Redmine não configurado.
+    """
+    from app.services.redmine.metrics import CLOSED_STATUSES
+
+    empresa_id = current_user.empresa_id
+
+    cfg = await db.execute(
+        select(RedmineConfig).where(
+            and_(RedmineConfig.empresa_id == empresa_id, RedmineConfig.ativo == True)
+        )
+    )
+    config = cfg.scalar_one_or_none()
+    if not config:
+        return {"configurado": False, "items": [], "sprints": []}
+
+    # Tarefas NÃO concluídas
+    q = (
+        select(RedmineTarefa, RedmineProjeto.nome.label("projeto_nome"))
+        .join(RedmineProjeto, RedmineTarefa.projeto_id == RedmineProjeto.id)
+        .where(
+            and_(
+                RedmineTarefa.empresa_id == empresa_id,
+                RedmineTarefa.status.not_in(list(CLOSED_STATUSES)),
+            )
+        )
+        .order_by(RedmineTarefa.data_prazo.asc().nulls_last(), RedmineTarefa.prioridade_id.asc())
+    )
+    rows = (await db.execute(q)).all()
+
+    # Determina categoria com base na data/versão
+    from datetime import date, timedelta
+    hoje = date.today()
+
+    def _categoria(t: RedmineTarefa) -> str:
+        if t.versao:
+            return t.versao  # usa o nome da sprint como categoria
+        if not t.data_prazo:
+            return "Sem Prazo"
+        prazo = date.fromisoformat(t.data_prazo)
+        diff  = (prazo - hoje).days
+        if diff < 0:
+            return "Atrasado"
+        if diff <= 30:
+            return "Próximas Entregas"
+        if diff <= 90:
+            return "Melhorias Planejadas"
+        return "Projetos Futuros"
+
+    PRIO_MAP = {
+        "Imediata": "Crítica", "Urgente": "Crítica",
+        "Alta": "Alta", "Normal": "Média", "Baixa": "Baixa",
+    }
+    CATEGORIA_COR = {
+        "Próximas Entregas":    "#3b82f6",
+        "Melhorias Planejadas": "#8b5cf6",
+        "Projetos Futuros":     "#10b981",
+        "Atrasado":             "#ef4444",
+        "Sem Prazo":            "#6b7280",
+    }
+
+    items = []
+    sprints_vistas: set = set()
+
+    for row in rows:
+        t: RedmineTarefa = row[0]
+        proj_nome: str   = row[1]
+        cat = _categoria(t)
+        if t.versao:
+            sprints_vistas.add(t.versao)
+
+        cor = CATEGORIA_COR.get(cat, "#8b5cf6")
+
+        items.append({
+            "id":          str(t.id),
+            "redmine_id":  t.redmine_id,
+            "titulo":      t.assunto,
+            "descricao":   (t.descricao or "")[:200] if t.descricao else f"#{t.redmine_id} · {proj_nome}",
+            "categoria":   cat,
+            "prazo":       t.data_prazo or "—",
+            "prioridade":  PRIO_MAP.get(t.prioridade, "Média"),
+            "impacto":     proj_nome,
+            "status":      t.status,
+            "responsavel": t.responsavel_nome,
+            "tracker":     t.tracker,
+            "progresso":   t.progresso,
+            "atrasada":    t.atrasada,
+            "versao":      t.versao,
+            "cor":         cor,
+            "projeto":     proj_nome,
+        })
+
+    return {
+        "configurado": True,
+        "items":       items,
+        "sprints":     sorted(list(sprints_vistas)),
+        "ultimo_sync": config.ultimo_sync.isoformat() if config.ultimo_sync else None,
+    }
