@@ -8,10 +8,9 @@ import { useDashboardStore } from '@/store'
 
 interface AppShellProps {
   children: React.ReactNode
-  onUploadClick: () => void
 }
 
-export function AppShell({ children, onUploadClick }: AppShellProps) {
+export function AppShell({ children }: AppShellProps) {
   const { sidebarOpen, setSidebarOpen } = useDashboardStore()
 
   // Close sidebar on small screens on mount
@@ -48,7 +47,7 @@ export function AppShell({ children, onUploadClick }: AppShellProps) {
           marginLeft: sidebarOpen ? 'var(--sidebar-width)' : '0',
         }}
       >
-        <Topbar onUploadClick={onUploadClick} />
+        <Topbar />
         <div className="flex-1 p-6 overflow-y-auto" style={{ color: 'var(--text-primary)' }}>
           {children}
         </div>

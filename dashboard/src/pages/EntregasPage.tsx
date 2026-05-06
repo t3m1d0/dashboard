@@ -162,18 +162,20 @@ function FilterBar({ projetos, trackers, filtro, setFiltro }: any) {
 // ── Página principal ──────────────────────────────────────────
 export function EntregasPage() {
   const { data } = useDashboardStore()
-  const { filtrarItems } = useSectionPeriodo('entregas')
+  const { filtrarItems, toQueryParams, periodo } = useSectionPeriodo('entregas')
   const [redmineData, setRedmineData] = useState<{ configurado: boolean; items: any[] } | null>(null)
   const [loading, setLoading]         = useState(true)
   const [error, setError]             = useState<string | null>(null)
   const [filtro, setFiltro]           = useState({ projeto: '', tracker: '', impacto: '' })
 
   useEffect(() => {
-    RedmineEntregasAPI.getEntregas({ limit: 50 })
+    setLoading(true)
+    const params = { limit: 50, ...toQueryParams() }
+    RedmineEntregasAPI.getEntregas(params)
       .then(setRedmineData)
       .catch(() => setRedmineData({ configurado: false, items: [] }))
       .finally(() => setLoading(false))
-  }, [])
+  }, [periodo.mes, periodo.ano, periodo.dataInicio, periodo.dataFim, periodo.modo])
 
   // Fonte de dados: Redmine se configurado, JSON estático como fallback
   const isRedmine  = redmineData?.configurado === true

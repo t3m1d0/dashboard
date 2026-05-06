@@ -52,7 +52,12 @@ export const AuthAPI = {
 
 // ── Dashboard ─────────────────────────────────────────────────
 export const DashboardAPI = {
-  getOverview: () => request<DashboardData>('/dashboard/overview'),
+  getOverview: (params?: Record<string, string | number>) => {
+    const q = params && Object.keys(params).length > 0
+      ? '?' + new URLSearchParams(params as any).toString()
+      : ''
+    return request<DashboardData>(`/dashboard/overview${q}`)
+  },
 }
 
 // ── Chamados ─────────────────────────────────────────────────
@@ -144,10 +149,39 @@ export const RedmineAPI = {
 
 // ── Redmine — Entregas e Roadmap ──────────────────────────────
 export const RedmineEntregasAPI = {
-  getEntregas: (params?: { projeto_id?: string; limit?: number }) => {
-    const q = params ? '?' + new URLSearchParams(params as any).toString() : ''
+  getEntregas: (params?: Record<string, string | number>) => {
+    const q = params && Object.keys(params).length > 0
+      ? '?' + new URLSearchParams(params as any).toString()
+      : ''
     return request<{ configurado: boolean; items: any[] }>(`/redmine/entregas${q}`)
   },
-  getRoadmap: () =>
-    request<{ configurado: boolean; items: any[]; sprints: string[]; ultimo_sync: string | null }>('/redmine/roadmap'),
+  getRoadmap: (params?: Record<string, string | number>) => {
+    const q = params && Object.keys(params).length > 0
+      ? '?' + new URLSearchParams(params as any).toString()
+      : ''
+    return request<{ configurado: boolean; items: any[]; sprints: string[]; ultimo_sync: string | null }>(`/redmine/roadmap${q}`)
+  },
+}
+
+// ── Upload Sustentação ────────────────────────────────────────
+export const SustentacaoUploadAPI = {
+  upload: (file: File, modo: 'chamados' | 'kpis') => {
+    const form = new FormData()
+    form.append('file', file)
+    form.append('modo', modo)
+    const token = TokenStore.get()
+    return fetch(`${BASE_URL}/uploads/sustentacao`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: form,
+    }).then(async (r) => {
+      if (r.status === 401) { TokenStore.clear(); window.dispatchEvent(new CustomEvent('auth:expired')); throw new Error('Sessão expirada') }
+      const data = await r.json()
+      if (!r.ok) throw new Error(data.detail || `Erro ${r.status}`)
+      return data
+    })
+  },
+  getTemplate: (modo: 'chamados' | 'kpis') =>
+    request<any>(`/uploads/sustentacao/template?modo=${modo}`),
+  listUploads: () => request<any[]>('/uploads'),
 }

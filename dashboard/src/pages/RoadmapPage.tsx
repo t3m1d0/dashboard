@@ -147,7 +147,7 @@ function RoadmapCardLegacy({ item }: { item: any }) {
 // ── Página principal ──────────────────────────────────────────
 export function RoadmapPage() {
   const { data } = useDashboardStore()
-  const { filtrarItems } = useSectionPeriodo('roadmap')
+  const { filtrarItems, toQueryParams, periodo } = useSectionPeriodo('roadmap')
   const [redmineData, setRedmineData] = useState<any>(null)
   const [loading, setLoading]         = useState(true)
   const [filtroSprint, setFiltroSprint] = useState('')
@@ -155,11 +155,13 @@ export function RoadmapPage() {
   const [filtroResp, setFiltroResp]     = useState('')
 
   useEffect(() => {
-    RedmineEntregasAPI.getRoadmap()
+    setLoading(true)
+    const params = toQueryParams()
+    RedmineEntregasAPI.getRoadmap(Object.keys(params).length > 0 ? params : undefined)
       .then(setRedmineData)
       .catch(() => setRedmineData({ configurado: false, items: [], sprints: [] }))
       .finally(() => setLoading(false))
-  }, [])
+  }, [periodo.mes, periodo.ano, periodo.dataInicio, periodo.dataFim, periodo.modo])
 
   const isRedmine   = redmineData?.configurado === true
   const allRoadmap  = isRedmine ? (redmineData?.items || []) : data.roadmap

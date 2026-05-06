@@ -1,6 +1,7 @@
 // ============================================================
 // Overview Page — Visão Geral Executiva
 // ============================================================
+import { useEffect } from 'react'
 import {
   Headphones, BarChart2, CheckCircle, AlertTriangle,
   Users, Building2, Code2, Layers, Star
@@ -16,7 +17,18 @@ import {
 
 export function OverviewPage() {
   const { data } = useDashboardStore()
-  const { label: periodoLabel } = useSectionPeriodo('overview')
+  const { label: periodoLabel, periodo, toQueryParams } = useSectionPeriodo('overview')
+  const { setData } = useDashboardStore()
+  // Refetch dashboard data when period changes
+  useEffect(() => {
+    const params = toQueryParams()
+    const q = Object.keys(params).length > 0 ? '?' + new URLSearchParams(params as any).toString() : ''
+    import('@/services/api').then(({ DashboardAPI }) => {
+      const params = toQueryParams()
+    DashboardAPI.getOverview(Object.keys(params).length > 0 ? params : undefined).then(setData).catch(() => {})
+    })
+  }, [periodo.mes, periodo.ano, periodo.dataInicio, periodo.dataFim, periodo.modo])
+
   const { visaoGeral: vg, visaoEstrategica: ve } = data
 
   const availabilityData = ve.meses.map((m, i) => ({

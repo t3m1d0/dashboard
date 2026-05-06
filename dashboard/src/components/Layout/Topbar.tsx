@@ -1,7 +1,7 @@
 // ============================================================
 // Topbar — Header com breadcrumb e ações
 // ============================================================
-import { Sun, Moon, Maximize2, Printer, Menu, Upload } from 'lucide-react'
+import { Sun, Moon, Maximize2, Printer, Menu } from 'lucide-react'
 import { useDashboardStore } from '@/store'
 import { useSectionPeriodo } from '@/hooks/useSectionPeriodo'
 import type { TechSubSection } from '@/types'
@@ -15,20 +15,18 @@ const SUB_TITLES: Record<TechSubSection, [string, string]> = {
   roadmap:         ['Roadmap',              'Planejamento futuro'],
 }
 
-interface TopbarProps { onUploadClick: () => void }
+interface TopbarProps {}
 
-export function Topbar({ onUploadClick }: TopbarProps) {
+export function Topbar({}: TopbarProps) {
   const {
     activeSection, techSubSection,
-    isDark, toggleTheme,
-    uploadedSources, toggleSidebar,
+    isDark, toggleTheme, toggleSidebar,
   } = useDashboardStore()
 
   const [title, subtitle] = activeSection === 'tecnologia'
     ? SUB_TITLES[techSubSection]
     : ['Em Breve', 'Módulo em desenvolvimento']
 
-  const uploadCount   = Object.keys(uploadedSources).length
 
   const btnStyle: React.CSSProperties = {
     width: 36, height: 36,
@@ -81,27 +79,6 @@ export function Topbar({ onUploadClick }: TopbarProps) {
 
       {/* Actions */}
       <div className="flex items-center gap-2">
-        {/* Upload */}
-        <button
-          onClick={onUploadClick}
-          className="relative flex items-center gap-1.5 px-3.5 py-2"
-          style={{
-            background: 'var(--bg-elevated)', border: '1px solid var(--border)',
-            borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)',
-            fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer',
-            fontFamily: 'var(--font-body)', transition: 'all var(--transition)',
-          }}
-        >
-          <Upload size={14} />
-          <span className="hidden sm:inline">Importar</span>
-          {uploadCount > 0 && (
-            <span className="absolute -top-1.5 -right-1.5 flex items-center justify-center rounded-full text-white font-bold"
-              style={{ width: 18, height: 18, background: 'var(--accent)', fontSize: '0.6rem', border: '2px solid var(--bg-surface)' }}>
-              {uploadCount}
-            </span>
-          )}
-        </button>
-
         <button style={btnStyle} onClick={toggleTheme} title={isDark ? 'Modo Claro' : 'Modo Escuro'}>
           {isDark ? <Sun size={16} /> : <Moon size={16} />}
         </button>

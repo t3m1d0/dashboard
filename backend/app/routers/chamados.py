@@ -66,7 +66,14 @@ async def update_chamado(
 
 @router.get("/stats")
 async def get_stats(
+    mes: Optional[int] = Query(None, ge=1, le=12),
+    ano: Optional[int] = Query(None),
+    data_inicio: Optional[str] = Query(None),
+    data_fim: Optional[str] = Query(None),
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    return await ChamadoService(db).get_stats(current_user.empresa_id)
+    return await ChamadoService(db).get_stats(
+        current_user.empresa_id, mes=mes, ano=ano,
+        data_inicio=data_inicio, data_fim=data_fim
+    )

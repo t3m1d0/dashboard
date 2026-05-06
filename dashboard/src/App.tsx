@@ -46,7 +46,6 @@ export default function App() {
     isDark, isLoading, setLoading, setData, setCurrentUser,
   } = useDashboardStore()
 
-  const [uploadOpen, setUploadOpen] = useState(false)
   const [authed, setAuthed]         = useState<boolean | null>(null)
 
   // Tema
@@ -107,12 +106,11 @@ export default function App() {
   return (
     <>
       <Loader isVisible={isLoading} />
-      <AppShell onUploadClick={() => setUploadOpen(true)}>
+      <AppShell>
         <div key={`${activeSection}-${techSubSection}`} className="animate-fade-in">
           {content}
         </div>
       </AppShell>
-      <UploadModal isOpen={uploadOpen} onClose={() => setUploadOpen(false)} />
     </>
   )
 }

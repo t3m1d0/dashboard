@@ -99,9 +99,29 @@ class ChamadoService(BaseService):
         await self.db.flush()
         return chamado
 
-    async def get_stats(self, empresa_id: Optional[uuid.UUID] = None) -> Dict[str, Any]:
-        """Estatísticas consolidadas para o dashboard."""
+    async def get_stats(
+        self,
+        empresa_id: Optional[uuid.UUID] = None,
+        mes: Optional[int] = None,
+        ano: Optional[int] = None,
+        data_inicio: Optional[str] = None,
+        data_fim: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Estatísticas consolidadas para o dashboard com filtro de período."""
+        from sqlalchemy import extract
+        from datetime import datetime
         filters = [Chamado.empresa_id == empresa_id] if empresa_id else []
+
+        if data_inicio and data_fim:
+            di = datetime.strptime(data_inicio, "%Y-%m-%d")
+            df = datetime.strptime(data_fim, "%Y-%m-%d").replace(hour=23, minute=59, second=59)
+            filters.append(Chamado.criado_em >= di)
+            filters.append(Chamado.criado_em <= df)
+        elif ano:
+            filters.append(extract('year', Chamado.criado_em) == ano)
+            if mes:
+                filters.append(extract('month', Chamado.criado_em) == mes)
+
         base = and_(*filters) if filters else True
 
         total = (await self.db.execute(

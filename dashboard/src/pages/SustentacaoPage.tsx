@@ -1,16 +1,29 @@
 // ============================================================
 // Sustentação Page
 // ============================================================
+import { useEffect, useState } from 'react'
 import { useDashboardStore } from '@/store'
+import { useSectionPeriodo } from '@/hooks/useSectionPeriodo'
+import { DashboardAPI } from '@/services/api'
 import { PeriodoSelector } from '@/components/UI/PeriodoSelector'
-import { TrendingUp, TrendingDown, Minus } from 'lucide-react'
+import { ImportacaoSustentacao } from '@/components/Sustentacao/ImportacaoSustentacao'
+import { TrendingUp, TrendingDown, Minus, Upload } from 'lucide-react'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   LineChart, Line, Legend, PieChart, Pie, Cell
 } from 'recharts'
 
 export function SustentacaoPage() {
-  const { data } = useDashboardStore()
+  const { data, setData } = useDashboardStore()
+  const { periodo, toQueryParams } = useSectionPeriodo('sustentacao')
+  const [importOpen, setImportOpen] = useState(false)
+
+  // Refetch quando período muda
+  useEffect(() => {
+    const qp = toQueryParams()
+    DashboardAPI.getOverview(Object.keys(qp).length > 0 ? qp : undefined).then(setData).catch(() => {})
+  }, [periodo.mes, periodo.ano, periodo.dataInicio, periodo.dataFim, periodo.modo])
+
   const { sustentacao: s } = data
 
   const weeklyData = s.evolucaoSemanal.semanas.map((sem, i) => ({
@@ -28,13 +41,25 @@ export function SustentacaoPage() {
 
   return (
     <div className="animate-fade-in">
-      <div className="mb-6">
-        <h1 style={{ fontSize: '1.35rem', fontWeight: 700 }}>
-          Equipe de <span style={{ color: '#8b5cf6' }}>Sustentação</span>
-        </h1>
-        <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginTop: 3 }}>
-          Análise de chamados, SLA e eficiência operacional
-        </p>
+      <div className="flex items-end justify-between mb-6 gap-4 flex-wrap">
+        <div>
+          <h1 style={{ fontSize: '1.35rem', fontWeight: 700 }}>
+            Equipe de <span style={{ color: '#8b5cf6' }}>Sustentação</span>
+          </h1>
+          <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginTop: 3 }}>
+            Análise de chamados, SLA e eficiência operacional
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <PeriodoSelector secao="sustentacao" />
+          <button
+            onClick={() => setImportOpen(true)}
+            className="flex items-center gap-2 px-3.5 py-2 rounded-xl"
+            style={{ background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)', color: '#fff', border: 'none', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-body)' }}
+          >
+            <Upload size={14} /> Importar Excel
+          </button>
+        </div>
       </div>
 
       {/* SLA highlight row */}
@@ -181,6 +206,14 @@ export function SustentacaoPage() {
           </div>
         </div>
       </div>
+      <ImportacaoSustentacao
+        isOpen={importOpen}
+        onClose={() => setImportOpen(false)}
+        onSuccess={() => {
+          const qp = toQueryParams()
+          DashboardAPI.getOverview(Object.keys(qp).length > 0 ? qp : undefined).then(setData).catch(() => {})
+        }}
+      />
     </div>
   )
 }

@@ -523,8 +523,12 @@ def _tarefa_to_dict(t: RedmineTarefa) -> dict:
 # ── Entregas (tarefas concluídas → cards de entrega) ──────────
 @router.get("/entregas")
 async def get_entregas(
-    limit: int = Query(30, le=100),
+    limit: int = Query(50, le=200),
     projeto_id: Optional[str] = Query(None),
+    mes: Optional[int] = Query(None, ge=1, le=12),
+    ano: Optional[int] = Query(None),
+    data_inicio: Optional[str] = Query(None),
+    data_fim: Optional[str] = Query(None),
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
@@ -559,9 +563,10 @@ async def get_entregas(
         select(RedmineTarefa, RedmineProjeto.nome.label("projeto_nome"))
         .join(RedmineProjeto, RedmineTarefa.projeto_id == RedmineProjeto.id)
         .where(and_(*filters))
-        .order_by(desc(RedmineTarefa.data_fechamento))
-        .limit(limit)
     )
+    # Filtro por período na data de fechamento
+    q = _filtrar_por_periodo(q, RedmineTarefa.data_fechamento, mes, ano, data_inicio, data_fim)
+    q = q.order_by(desc(RedmineTarefa.data_fechamento)).limit(limit)
     rows = (await db.execute(q)).all()
 
     # Mapeia tracker → ícone/cor padrão
@@ -619,6 +624,10 @@ async def get_entregas(
 # ── Roadmap (tarefas em aberto por versão/sprint) ─────────────
 @router.get("/roadmap")
 async def get_roadmap(
+    mes: Optional[int] = Query(None, ge=1, le=12),
+    ano: Optional[int] = Query(None),
+    data_inicio: Optional[str] = Query(None),
+    data_fim: Optional[str] = Query(None),
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
@@ -641,7 +650,7 @@ async def get_roadmap(
         return {"configurado": False, "items": [], "sprints": []}
 
     # Tarefas NÃO concluídas
-    q = (
+    base_q = (
         select(RedmineTarefa, RedmineProjeto.nome.label("projeto_nome"))
         .join(RedmineProjeto, RedmineTarefa.projeto_id == RedmineProjeto.id)
         .where(
@@ -650,8 +659,13 @@ async def get_roadmap(
                 RedmineTarefa.status.not_in(list(CLOSED_STATUSES)),
             )
         )
-        .order_by(RedmineTarefa.data_prazo.asc().nulls_last(), RedmineTarefa.prioridade_id.asc())
     )
+    # Filtro de período no prazo da tarefa (quando especificado)
+    if mes or data_inicio:
+        base_q = _filtrar_por_periodo(base_q, RedmineTarefa.data_prazo, mes, ano, data_inicio, data_fim)
+    elif ano:
+        base_q = _filtrar_por_periodo(base_q, RedmineTarefa.data_prazo, None, ano, None, None)
+    q = base_q.order_by(RedmineTarefa.data_prazo.asc().nulls_last(), RedmineTarefa.prioridade_id.asc())
     rows = (await db.execute(q)).all()
 
     # Determina categoria com base na data/versão
@@ -722,3 +736,19 @@ async def get_roadmap(
         "sprints":     sorted(list(sprints_vistas)),
         "ultimo_sync": config.ultimo_sync.isoformat() if config.ultimo_sync else None,
     }
+
+
+# ── Helpers de filtro por período ────────────────────────────
+def _filtrar_por_periodo(q, model_field, mes: Optional[int], ano: Optional[int], data_inicio: Optional[str], data_fim: Optional[str]):
+    """Aplica filtro de período a uma query SQLAlchemy."""
+    from sqlalchemy import extract
+    if data_inicio and data_fim:
+        from datetime import datetime
+        di = datetime.strptime(data_inicio, "%Y-%m-%d")
+        df = datetime.strptime(data_fim,   "%Y-%m-%d").replace(hour=23, minute=59, second=59)
+        q = q.where(model_field >= di, model_field <= df)
+    elif ano:
+        q = q.where(extract('year', model_field) == ano)
+        if mes:
+            q = q.where(extract('month', model_field) == mes)
+    return q
