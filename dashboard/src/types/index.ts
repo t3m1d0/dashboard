@@ -28,39 +28,11 @@ export interface VisaoGeral {
   satisfacaoInterna: KPIMetric
 }
 
-export interface CategoriaTicket {
-  categoria: string
-  total: number
-  cor: string
-}
-
-export interface Assunto {
-  rank: number
-  assunto: string
-  total: number
-  tendencia: 'up' | 'down' | 'stable'
-}
-
-export interface EvolucaoSemanal {
-  semanas: string[]
-  abertos: number[]
-  resolvidos: number[]
-  backlog: number[]
-}
-
-export interface SLAData {
-  tempoMedioAtendimento: string
-  tempoMedioResolucao: string
-  taxaDentroSLA: number
-  foraDoSLA: number
-}
-
-export interface Eficiencia {
-  reincidencia: number
-  chamadosEvitados: number
-  automacoesImplementadas: number
-  ganhoOperacionalHoras: number
-}
+export interface CategoriaTicket { categoria: string; total: number; cor: string }
+export interface Assunto { rank: number; assunto: string; total: number; tendencia: 'up'|'down'|'stable' }
+export interface EvolucaoSemanal { semanas: string[]; abertos: number[]; resolvidos: number[]; backlog: number[] }
+export interface SLAData { tempoMedioAtendimento: string; tempoMedioResolucao: string; taxaDentroSLA: number; foraDoSLA: number }
+export interface Eficiencia { reincidencia: number; chamadosEvitados: number; automacoesImplementadas: number; ganhoOperacionalHoras: number }
 
 export interface Sustentacao {
   porCategoria: CategoriaTicket[]
@@ -70,8 +42,8 @@ export interface Sustentacao {
   eficiencia: Eficiencia
 }
 
-export type ProjectStatus = 'backlog' | 'desenvolvimento' | 'homologacao' | 'validacao' | 'producao'
-export type ProjectPriority = 'Baixa' | 'Média' | 'Alta' | 'Crítica'
+export type ProjectStatus = 'backlog'|'desenvolvimento'|'homologacao'|'validacao'|'producao'
+export type ProjectPriority = 'Baixa'|'Média'|'Alta'|'Crítica'
 
 export interface Projeto {
   id: number
@@ -130,7 +102,26 @@ export interface DashboardData {
   roadmap: RoadmapItem[]
 }
 
-export type Section = 'overview' | 'sustentacao' | 'desenvolvimento' | 'entregas' | 'estrategica' | 'roadmap'
+// ── Navigation ────────────────────────────────────────────────
+// Section é agora a chave de navegação principal
+export type Section = 'tecnologia' | 'marketing' | 'financeiro' | 'rh'
+
+// Sub-seções dentro de Tecnologia
+export type TechSubSection =
+  | 'overview'
+  | 'sustentacao'
+  | 'desenvolvimento'
+  | 'entregas'
+  | 'estrategica'
+  | 'roadmap'
+
+export type DevSubSection = 'dashboard' | 'tarefas' | 'equipe' | 'config'
+
+// ── Filtro global de período ──────────────────────────────────
+export interface PeriodoFiltro {
+  mes: number   // 1–12, 0 = todos
+  ano: number
+}
 
 // ── Redmine Types ─────────────────────────────────────────────
 export interface RedmineConfig {
@@ -224,5 +215,3 @@ export interface RedmineFiltros {
   versoes: string[]
   trackers: string[]
 }
-
-export type DevSubSection = 'dashboard' | 'tarefas' | 'equipe' | 'config'

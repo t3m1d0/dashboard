@@ -4,6 +4,7 @@
 // ============================================================
 import { useEffect, useState, useMemo } from 'react'
 import { useDashboardStore } from '@/store'
+import { usePeriodo } from '@/hooks/usePeriodo'
 import { RedmineEntregasAPI } from '@/services/api'
 import { PRIORITY_COLORS } from '@/utils'
 import { ArrowRight, CheckCircle2, Clock, AlertTriangle, User, GitBranch, TrendingUp, Map, RefreshCw, Folder } from 'lucide-react'
@@ -145,6 +146,7 @@ function RoadmapCardLegacy({ item }: { item: any }) {
 // ── Página principal ──────────────────────────────────────────
 export function RoadmapPage() {
   const { data } = useDashboardStore()
+  const { filtrarPorData } = usePeriodo()
   const [redmineData, setRedmineData] = useState<any>(null)
   const [loading, setLoading]         = useState(true)
   const [filtroSprint, setFiltroSprint] = useState('')
@@ -159,7 +161,8 @@ export function RoadmapPage() {
   }, [])
 
   const isRedmine   = redmineData?.configurado === true
-  const rawItems    = isRedmine ? (redmineData?.items || []) : data.roadmap
+  const allRoadmap  = isRedmine ? (redmineData?.items || []) : data.roadmap
+  const rawItems    = filtrarPorData(allRoadmap, 'prazo')
   const sprints     = redmineData?.sprints || []
 
   // Responsáveis únicos para filtro

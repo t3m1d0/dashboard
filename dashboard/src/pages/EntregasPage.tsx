@@ -4,6 +4,7 @@
 // ============================================================
 import { useEffect, useState, useMemo } from 'react'
 import { useDashboardStore } from '@/store'
+import { usePeriodo } from '@/hooks/usePeriodo'
 import { RedmineEntregasAPI } from '@/services/api'
 import { formatDate } from '@/utils'
 import {
@@ -160,6 +161,7 @@ function FilterBar({ projetos, trackers, filtro, setFiltro }: any) {
 // ── Página principal ──────────────────────────────────────────
 export function EntregasPage() {
   const { data } = useDashboardStore()
+  const { label: periodoLabel, filtrarPorData } = usePeriodo()
   const [redmineData, setRedmineData] = useState<{ configurado: boolean; items: any[] } | null>(null)
   const [loading, setLoading]         = useState(true)
   const [error, setError]             = useState<string | null>(null)
@@ -174,7 +176,8 @@ export function EntregasPage() {
 
   // Fonte de dados: Redmine se configurado, JSON estático como fallback
   const isRedmine  = redmineData?.configurado === true
-  const rawItems   = isRedmine ? (redmineData?.items || []) : data.entregasEstrategicas
+  const allItems   = isRedmine ? (redmineData?.items || []) : data.entregasEstrategicas
+  const rawItems   = isRedmine ? filtrarPorData(allItems, 'data') : allItems
 
   // Opções de filtro dinâmicas
   const projetos = useMemo(() => [...new Set(rawItems.map((e: any) => e.areaBeneficiada || e.projeto).filter(Boolean))], [rawItems])
