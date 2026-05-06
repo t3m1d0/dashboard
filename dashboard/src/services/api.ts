@@ -185,3 +185,32 @@ export const SustentacaoUploadAPI = {
     request<any>(`/uploads/sustentacao/template?modo=${modo}`),
   listUploads: () => request<any[]>('/uploads'),
 }
+
+// ── Sustentação — dados reais do banco ───────────────────────
+export const SustentacaoAPI = {
+  getStats: (params?: Record<string, string | number>) => {
+    const q = params && Object.keys(params).length > 0
+      ? '?' + new URLSearchParams(params as any).toString() : ''
+    return request<any>(`/sustentacao/stats${q}`)
+  },
+  getChamados: (params?: Record<string, string | number>) => {
+    const q = params && Object.keys(params).length > 0
+      ? '?' + new URLSearchParams(params as any).toString() : ''
+    return request<any>(`/sustentacao/chamados${q}`)
+  },
+  importCSV: (file: File) => {
+    const form = new FormData()
+    form.append('file', file)
+    const token = TokenStore.get()
+    return fetch(`${BASE_URL}/sustentacao/import`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: form,
+    }).then(async (r) => {
+      if (r.status === 401) { TokenStore.clear(); window.dispatchEvent(new CustomEvent('auth:expired')); throw new Error('Sessão expirada') }
+      const data = await r.json()
+      if (!r.ok) throw new Error(data.detail || `Erro ${r.status}`)
+      return data
+    })
+  },
+}

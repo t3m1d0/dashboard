@@ -11,6 +11,7 @@ from app.core.config import settings
 from app.core.database import create_tables
 from app.routers import auth, dashboard, chamados, projetos, kpis, uploads
 from app.routers import redmine
+from app.routers import sustentacao
 
 
 @asynccontextmanager
@@ -46,7 +47,8 @@ app.include_router(chamados.router,  prefix="/api")
 app.include_router(projetos.router,  prefix="/api")
 app.include_router(kpis.router,      prefix="/api")
 app.include_router(uploads.router,   prefix="/api")
-app.include_router(redmine.router,   prefix="/api")
+app.include_router(redmine.router,     prefix="/api")
+app.include_router(sustentacao.router,  prefix="/api")
 
 @app.get("/api/health")
 async def health():
