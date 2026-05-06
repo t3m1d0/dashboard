@@ -3,9 +3,8 @@
 // ============================================================
 import { Sun, Moon, Maximize2, Printer, Menu, Upload } from 'lucide-react'
 import { useDashboardStore } from '@/store'
+import { useSectionPeriodo } from '@/hooks/useSectionPeriodo'
 import type { TechSubSection } from '@/types'
-
-const MESES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
 
 const SUB_TITLES: Record<TechSubSection, [string, string]> = {
   overview:        ['Visão Geral',          'Relatório consolidado'],
@@ -23,7 +22,6 @@ export function Topbar({ onUploadClick }: TopbarProps) {
     activeSection, techSubSection,
     isDark, toggleTheme,
     uploadedSources, toggleSidebar,
-    periodo,
   } = useDashboardStore()
 
   const [title, subtitle] = activeSection === 'tecnologia'
@@ -31,9 +29,6 @@ export function Topbar({ onUploadClick }: TopbarProps) {
     : ['Em Breve', 'Módulo em desenvolvimento']
 
   const uploadCount   = Object.keys(uploadedSources).length
-  const periodoLabel  = periodo.mes === 0
-    ? `${periodo.ano} — todos os meses`
-    : `${MESES[periodo.mes - 1]}/${periodo.ano}`
 
   const btnStyle: React.CSSProperties = {
     width: 36, height: 36,
@@ -74,8 +69,7 @@ export function Topbar({ onUploadClick }: TopbarProps) {
           <span style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-primary)' }}>{title}</span>
         </div>
         <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
-          <span style={{ color: '#8b5cf6', fontWeight: 600 }}>{periodoLabel}</span>
-          {' · '}{subtitle}
+          {subtitle}
         </div>
       </div>
 

@@ -7,6 +7,7 @@ import { useDashboardStore } from '@/store'
 import { formatCurrency } from '@/utils'
 import { RedmineAPI, KPIsAPI } from '@/services/api'
 import { Edit3, Save, X, RefreshCw, CheckCircle2 } from 'lucide-react'
+import { PeriodoSelector } from '@/components/UI/PeriodoSelector'
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, RadialBarChart, RadialBar, PolarAngleAxis
@@ -122,6 +123,7 @@ export function EstrategicaPage() {
             {rmSnap?.configurado && <span style={{ color: '#10b981' }}> · Redmine conectado ✓</span>}
           </p>
         </div>
+        <PeriodoSelector secao="estrategica" />
         <button onClick={() => setEditOpen(true)} className="flex items-center gap-2 px-4 py-2 rounded-xl"
           style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-body)' }}>
           <Edit3 size={14} /> Editar Indicadores
@@ -175,7 +177,8 @@ export function EstrategicaPage() {
               style={{ background: 'var(--bg-elevated)', border: '1px dashed var(--border)' }}>
               <div className="text-center">
                 <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: 8 }}>Sem histórico de disponibilidade</div>
-                <button onClick={() => setEditOpen(true)}
+                <PeriodoSelector secao="estrategica" />
+        <button onClick={() => setEditOpen(true)}
                   style={{ fontSize: '0.78rem', color: '#8b5cf6', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>
                   + Adicionar dados
                 </button>

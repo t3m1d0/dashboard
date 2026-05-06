@@ -2,6 +2,7 @@
 // Sustentação Page
 // ============================================================
 import { useDashboardStore } from '@/store'
+import { PeriodoSelector } from '@/components/UI/PeriodoSelector'
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,

@@ -4,7 +4,8 @@
 // ============================================================
 import { useEffect, useState, useMemo } from 'react'
 import { useDashboardStore } from '@/store'
-import { usePeriodo } from '@/hooks/usePeriodo'
+import { PeriodoSelector } from '@/components/UI/PeriodoSelector'
+import { useSectionPeriodo } from '@/hooks/useSectionPeriodo'
 import { RedmineEntregasAPI } from '@/services/api'
 import { PRIORITY_COLORS } from '@/utils'
 import { ArrowRight, CheckCircle2, Clock, AlertTriangle, User, GitBranch, TrendingUp, Map, RefreshCw, Folder } from 'lucide-react'
@@ -146,7 +147,7 @@ function RoadmapCardLegacy({ item }: { item: any }) {
 // ── Página principal ──────────────────────────────────────────
 export function RoadmapPage() {
   const { data } = useDashboardStore()
-  const { filtrarPorData } = usePeriodo()
+  const { filtrarItems } = useSectionPeriodo('roadmap')
   const [redmineData, setRedmineData] = useState<any>(null)
   const [loading, setLoading]         = useState(true)
   const [filtroSprint, setFiltroSprint] = useState('')
@@ -162,7 +163,7 @@ export function RoadmapPage() {
 
   const isRedmine   = redmineData?.configurado === true
   const allRoadmap  = isRedmine ? (redmineData?.items || []) : data.roadmap
-  const rawItems    = filtrarPorData(allRoadmap, 'prazo')
+  const rawItems    = filtrarItems(allRoadmap, 'prazo')
   const sprints     = redmineData?.sprints || []
 
   // Responsáveis únicos para filtro
@@ -216,6 +217,7 @@ export function RoadmapPage() {
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
+          <PeriodoSelector secao="roadmap" />
           {totalAtrasadas > 0 && (
             <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full"
               style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', fontSize: '0.72rem', fontWeight: 600, color: '#ef4444' }}>

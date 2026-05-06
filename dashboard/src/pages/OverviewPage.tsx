@@ -6,6 +6,8 @@ import {
   Users, Building2, Code2, Layers, Star
 } from 'lucide-react'
 import { KPICard } from '@/components/KPI/KPICard'
+import { PeriodoSelector } from '@/components/UI/PeriodoSelector'
+import { useSectionPeriodo } from '@/hooks/useSectionPeriodo'
 import { useDashboardStore } from '@/store'
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -14,6 +16,7 @@ import {
 
 export function OverviewPage() {
   const { data } = useDashboardStore()
+  const { label: periodoLabel } = useSectionPeriodo('overview')
   const { visaoGeral: vg, visaoEstrategica: ve } = data
 
   const availabilityData = ve.meses.map((m, i) => ({
@@ -32,9 +35,10 @@ export function OverviewPage() {
             Visão Geral <span style={{ color: '#8b5cf6' }}>Executiva</span>
           </h1>
           <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginTop: 3 }}>
-            Consolidado de {data.meta.mes} {data.meta.ano} · {data.meta.empresa}
+            {data.meta.empresa}
           </p>
         </div>
+        <PeriodoSelector secao="overview" />
       </div>
 
       {/* KPI Grid */}

@@ -3,6 +3,7 @@
 // ============================================================
 import { useEffect, useState } from 'react'
 import { LayoutDashboard, ListTodo, Users, Settings, Zap } from 'lucide-react'
+import { PeriodoSelector } from '@/components/UI/PeriodoSelector'
 import { useRedmineStore } from '@/store/redmine'
 import { RedmineAPI } from '@/services/api'
 import type { DevSubSection } from '@/types'
@@ -95,6 +96,7 @@ export function DesenvolvimentoPage() {
         </div>
       </div>
 
+      {isConfigured && <div className="flex justify-end mb-2"><PeriodoSelector secao="desenvolvimento" /></div>}
       <div className="flex mb-5 overflow-x-auto" style={{ borderBottom: '1px solid var(--border)' }}>
         {TABS.map(tab => (
           <button key={tab.id} onClick={() => setSubSection(tab.id)} style={tabStyle(subSection === tab.id)}>
