@@ -1,6 +1,3 @@
-// ============================================================
-// App.tsx — Root com autenticação + dados da API
-// ============================================================
 import { useEffect, useState } from 'react'
 import { AppShell }        from '@/components/Layout/AppShell'
 import { Loader }          from '@/components/UI/Loader'
@@ -17,12 +14,12 @@ import { EstrategicaPage }     from '@/pages/EstrategicaPage'
 import { RoadmapPage }         from '@/pages/RoadmapPage'
 
 const PAGE_MAP: Record<string, React.ReactNode> = {
-  overview:       <OverviewPage />,
-  sustentacao:    <SustentacaoPage />,
+  overview:        <OverviewPage />,
+  sustentacao:     <SustentacaoPage />,
   desenvolvimento: <DesenvolvimentoPage />,
-  entregas:       <EntregasPage />,
-  estrategica:    <EstrategicaPage />,
-  roadmap:        <RoadmapPage />,
+  entregas:        <EntregasPage />,
+  estrategica:     <EstrategicaPage />,
+  roadmap:         <RoadmapPage />,
 }
 
 export default function App() {
@@ -30,14 +27,30 @@ export default function App() {
   const [uploadOpen, setUploadOpen] = useState(false)
   const [authed, setAuthed] = useState<boolean | null>(null)
 
+  // Tema
   useEffect(() => {
     document.documentElement.className = isDark ? '' : 'light'
   }, [isDark])
 
+  // Escuta expiração de sessão — sem redirect forçado, apenas volta ao login
+  useEffect(() => {
+    const handler = () => {
+      setAuthed(false)
+      setLoading(false)
+    }
+    window.addEventListener('auth:expired', handler)
+    return () => window.removeEventListener('auth:expired', handler)
+  }, [])
+
+  // Verificar autenticação inicial
   useEffect(() => {
     const init = async () => {
       const token = TokenStore.get()
-      if (!token) { setAuthed(false); setLoading(false); return }
+      if (!token) {
+        setAuthed(false)
+        setLoading(false)
+        return
+      }
       try {
         const data = await DashboardAPI.getOverview()
         setData(data)
@@ -56,7 +69,7 @@ export default function App() {
     try {
       const data = await DashboardAPI.getOverview()
       setData(data)
-    } catch { /* usa dados padrão */ }
+    } catch {}
     setAuthed(true)
   }
 

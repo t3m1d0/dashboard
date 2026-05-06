@@ -25,7 +25,8 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
   if (res.status === 401) {
     TokenStore.clear()
-    window.location.href = '/login'
+    // Dispara evento para o App.tsx tratar o logout sem redirecionar
+    window.dispatchEvent(new CustomEvent('auth:expired'))
     throw new Error('Sessão expirada')
   }
 
