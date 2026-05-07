@@ -288,8 +288,20 @@ export function TarefasView() {
 
       {/* Kanban */}
       {!loading && viewMode === 'kanban' && (
-        <div className="overflow-x-auto pb-4">
-          <div style={{ display: 'flex', gap: 12, minWidth: 'max-content' }}>
+        <div
+          style={{
+            overflowX: 'auto',
+            overflowY: 'visible',
+            paddingBottom: 16,
+            marginLeft: -24,
+            marginRight: -24,
+            paddingLeft: 24,
+            paddingRight: 24,
+            WebkitOverflowScrolling: 'touch',
+            scrollbarWidth: 'thin',
+          }}
+        >
+          <div style={{ display: 'flex', gap: 12, minWidth: 'max-content', width: 'fit-content' }}>
             {Object.entries(kanban).map(([status, cards]) => {
               const cor = getStatusCor(status)
               return (
