@@ -155,58 +155,63 @@ function KanbanBoard({ kanban, onSelect }: {
   kanban: Record<string, RedmineTarefa[]>
   onSelect: (t: RedmineTarefa) => void
 }) {
-  const ref        = useRef<HTMLDivElement>(null)
-  const dragging   = useRef(false)
-  const startX     = useRef(0)
+  const ref         = useRef<HTMLDivElement>(null)
+  const dragging    = useRef(false)
+  const startX      = useRef(0)
   const startScroll = useRef(0)
+
+  // Adiciona listeners no document para capturar mouse fora do elemento
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      if (!dragging.current || !ref.current) return
+      const dx = e.clientX - startX.current
+      ref.current.scrollLeft = startScroll.current - dx
+    }
+    const onUp = () => {
+      dragging.current = false
+      if (ref.current) ref.current.style.cursor = 'grab'
+    }
+    document.addEventListener('mousemove', onMove)
+    document.addEventListener('mouseup', onUp)
+    return () => {
+      document.removeEventListener('mousemove', onMove)
+      document.removeEventListener('mouseup', onUp)
+    }
+  }, [])
 
   const onMouseDown = (e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest('[data-kanban-card]')) return
-    dragging.current   = true
-    startX.current     = e.clientX
+    e.preventDefault()
+    dragging.current    = true
+    startX.current      = e.clientX
     startScroll.current = ref.current?.scrollLeft || 0
     if (ref.current) ref.current.style.cursor = 'grabbing'
-  }
-
-  const onMouseMove = (e: React.MouseEvent) => {
-    if (!dragging.current || !ref.current) return
-    e.preventDefault()
-    ref.current.scrollLeft = startScroll.current - (e.clientX - startX.current)
-  }
-
-  const stopDrag = () => {
-    dragging.current = false
-    if (ref.current) ref.current.style.cursor = 'grab'
   }
 
   return (
     <>
       <style>{`
-        .kanban-scroll::-webkit-scrollbar { height: 6px; }
-        .kanban-scroll::-webkit-scrollbar-track { background: rgba(255,255,255,0.03); border-radius: 99px; }
-        .kanban-scroll::-webkit-scrollbar-thumb { background: rgba(139,92,246,0.45); border-radius: 99px; }
-        .kanban-scroll::-webkit-scrollbar-thumb:hover { background: rgba(139,92,246,0.75); }
+        .kb-scroll { overflow-x: auto; overflow-y: visible; }
+        .kb-scroll::-webkit-scrollbar { height: 7px; }
+        .kb-scroll::-webkit-scrollbar-track { background: rgba(255,255,255,0.04); border-radius: 99px; margin: 0 4px; }
+        .kb-scroll::-webkit-scrollbar-thumb { background: rgba(139,92,246,0.5); border-radius: 99px; }
+        .kb-scroll::-webkit-scrollbar-thumb:hover { background: rgba(139,92,246,0.8); }
       `}</style>
       <div
         ref={ref}
-        className="kanban-scroll"
+        className="kb-scroll"
         onMouseDown={onMouseDown}
-        onMouseMove={onMouseMove}
-        onMouseUp={stopDrag}
-        onMouseLeave={stopDrag}
         style={{
-          overflowX: 'auto',
-          overflowY: 'visible',
           cursor: 'grab',
-          paddingBottom: 12,
+          paddingBottom: 8,
           paddingTop: 4,
           userSelect: 'none',
           WebkitOverflowScrolling: 'touch',
           scrollbarWidth: 'thin',
-          scrollbarColor: 'rgba(139,92,246,0.45) rgba(255,255,255,0.03)',
+          scrollbarColor: 'rgba(139,92,246,0.5) rgba(255,255,255,0.04)',
         }}
       >
-        <div style={{ display: 'flex', gap: 12, width: 'max-content', minWidth: '100%' }}>
+        <div style={{ display: 'flex', gap: 12, width: 'max-content' }}>
           {Object.entries(kanban).map(([status, cards]) => {
             const cor = getStatusCor(status)
             return (
