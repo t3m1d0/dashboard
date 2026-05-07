@@ -99,7 +99,10 @@ export function DashboardView() {
   )
 
   const kpis = dashboard.kpis
-  const burndown = dashboard.burndown.filter(d => d.abertas !== undefined)
+  // Mostra dias que têm dados reais (abertas não nulo)
+  const burndown = dashboard.burndown.filter(d => d.abertas !== null && d.abertas !== undefined)
+  // Se não há burndown histórico, mostra mensagem adequada
+  const hasBurndown = burndown.length > 0
 
   return (
     <div>
@@ -168,8 +171,11 @@ export function DashboardView() {
               </AreaChart>
             </ResponsiveContainer>
           ) : (
-            <div className="flex items-center justify-center h-48" style={{ color: 'var(--text-muted)', fontSize: '0.82rem' }}>
-              Sincronize para ver o histórico
+            <div className="flex flex-col items-center justify-center h-48 gap-2" style={{ color: 'var(--text-muted)', fontSize: '0.82rem', textAlign: 'center' }}>
+              <div>Sincronize periodicamente para acumular histórico</div>
+              <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                O burndown aparece após múltiplos syncs ou quando as tarefas têm datas de criação/conclusão
+              </div>
             </div>
           )}
         </div>
