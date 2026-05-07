@@ -389,7 +389,7 @@ async def get_dashboard(
     snap = snap_result.scalar_one_or_none()
 
     # Burndown 14 dias
-    burndown = await get_burndown(db, empresa_id, dias=14)
+    burndown = await get_burndown(db, empresa_id, dias=30)
 
     # Métricas por membro
     membros_result = await db.execute(
@@ -490,6 +490,17 @@ async def get_filtros(
         "trackers":     await distinct(RedmineTarefa.tracker),
     }
 
+
+
+@router.post("/metrics/rebuild")
+async def rebuild_metrics(
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    """Recalcula métricas a partir das tarefas já sincronizadas."""
+    from app.services.redmine.metrics import calcular_metricas
+    await calcular_metricas(db, current_user.empresa_id)
+    return {"ok": True, "message": "Métricas recalculadas"}
 
 # ── Helper ────────────────────────────────────────────────────
 def _tarefa_to_dict(t: RedmineTarefa) -> dict:
