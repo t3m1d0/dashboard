@@ -45,10 +45,12 @@ export function AppShell({ children }: AppShellProps) {
         className="flex flex-col flex-1 min-h-screen transition-all duration-300"
         style={{
           marginLeft: sidebarOpen ? 'var(--sidebar-width)' : '0',
+          overflowY: 'auto',
+          overflowX: 'hidden',
         }}
       >
         <Topbar />
-        <div className="flex-1 p-6 overflow-y-auto" style={{ color: 'var(--text-primary)' }}>
+        <div className="flex-1 p-6" style={{ color: 'var(--text-primary)', minHeight: 0 }}>
           {children}
         </div>
       </main>
