@@ -670,20 +670,40 @@ export function MovimentacaoPage() {
       {!loading && hasData && viewMode === 'dashboard' && (
         <>
           {/* KPIs */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
-            {[
-              { label: 'Custo Total Estoque', value: fmtBRL(stats.kpis.custo_final), color: '#f59e0b', big: true },
-              { label: 'Itens em Estoque',    value: fmtNum(stats.kpis.estoque_final), color: '#3b82f6' },
-              { label: 'Custo Entradas',      value: fmtBRL(stats.kpis.custo_entrada), color: '#10b981' },
-              { label: 'Custo Saídas',        value: fmtBRL(stats.kpis.custo_saida), color: '#8b5cf6' },
-            ].map(item => (
-              <div key={item.label} className="rounded-2xl p-4 relative overflow-hidden"
-                style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-                <div className="absolute top-0 left-0 right-0 rounded-t-2xl" style={{ height: 3, background: item.color }} />
-                <div style={{ fontSize: '0.68rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', marginBottom: 6 }}>{item.label}</div>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: item.big ? '1.3rem' : '1.6rem', fontWeight: 700, color: item.color, lineHeight: 1 }}>{item.value}</div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
+            {/* Estoque: Qtd + Valor lado a lado */}
+            <div className="rounded-2xl p-4 relative overflow-hidden col-span-2 lg:col-span-2"
+              style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+              <div className="absolute top-0 left-0 right-0 rounded-t-2xl" style={{ height: 3, background: 'linear-gradient(90deg, #3b82f6, #f59e0b)' }} />
+              <div style={{ fontSize: '0.68rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', marginBottom: 10 }}>Estoque Atual</div>
+              <div className="flex items-end gap-4">
+                <div>
+                  <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)', marginBottom: 3 }}>Quantidade</div>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: '1.7rem', fontWeight: 700, color: '#3b82f6', lineHeight: 1 }}>{fmtNum(stats.kpis.estoque_final)}</div>
+                  <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)', marginTop: 3 }}>itens</div>
+                </div>
+                <div style={{ width: 1, height: 44, background: 'var(--border)', flexShrink: 0 }} />
+                <div>
+                  <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)', marginBottom: 3 }}>Valor</div>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: '1.4rem', fontWeight: 700, color: '#f59e0b', lineHeight: 1 }}>{fmtBRL(stats.kpis.custo_final)}</div>
+                  <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)', marginTop: 3 }}>em estoque</div>
+                </div>
               </div>
-            ))}
+            </div>
+            {/* Entradas */}
+            <div className="rounded-2xl p-4 relative overflow-hidden"
+              style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+              <div className="absolute top-0 left-0 right-0 rounded-t-2xl" style={{ height: 3, background: '#10b981' }} />
+              <div style={{ fontSize: '0.68rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', marginBottom: 6 }}>Custo Entradas</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '1.4rem', fontWeight: 700, color: '#10b981', lineHeight: 1 }}>{fmtBRL(stats.kpis.custo_entrada)}</div>
+            </div>
+            {/* Vendas */}
+            <div className="rounded-2xl p-4 relative overflow-hidden"
+              style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+              <div className="absolute top-0 left-0 right-0 rounded-t-2xl" style={{ height: 3, background: '#8b5cf6' }} />
+              <div style={{ fontSize: '0.68rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', marginBottom: 6 }}>Vendas</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '1.4rem', fontWeight: 700, color: '#8b5cf6', lineHeight: 1 }}>{fmtBRL(stats.kpis.custo_saida)}</div>
+            </div>
           </div>
 
           {/* Métricas secundárias */}
@@ -760,7 +780,7 @@ export function MovimentacaoPage() {
                   formatter={(v: number, name: string) => [fmtBRL(v), name]} />
                 <Legend iconSize={10} wrapperStyle={{ fontSize: '0.72rem', paddingTop: 8 }} />
                 <Bar dataKey="custo_entrada" name="Custo Entrada" fill="rgba(16,185,129,0.8)" radius={[3, 3, 0, 0]} />
-                <Bar dataKey="custo_saida"   name="Custo Saída"   fill="rgba(139,92,246,0.8)" radius={[3, 3, 0, 0]} />
+                <Bar dataKey="custo_saida"   name="Vendas"        fill="rgba(139,92,246,0.8)" radius={[3, 3, 0, 0]} />
                 <Bar dataKey="custo"         name="Custo Final"   fill="rgba(245,158,11,0.8)" radius={[3, 3, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -831,7 +851,7 @@ export function MovimentacaoPage() {
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr>
-                      {['Produto','Grupo','Filial','Período','Est. Anterior','Qtd Entrada','Custo Entrada','Qtd Saída','Custo Saída','Est. Final','Custo Final'].map(h => (
+                      {['Produto','Grupo','Filial','Período','Est. Anterior','Qtd Entrada','Custo Entrada','Qtd Saída','Vendas','Est. Final','Custo Final'].map(h => (
                         <th key={h} style={{ padding: '9px 12px', textAlign: 'left', fontSize: '0.62rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', borderBottom: '1px solid var(--border)', fontWeight: 600, background: 'var(--bg-elevated)', whiteSpace: 'nowrap' }}>{h}</th>
                       ))}
                     </tr>
