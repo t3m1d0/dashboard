@@ -126,14 +126,16 @@ async def import_movimentacao(
 async def get_movimentacao_stats(
     periodo:   Optional[str] = Query(None),
     grupo:     Optional[str] = Query(None),
-    filial:    Optional[str] = Query(None),
-    categoria: Optional[str] = Query(None),  # pneus | pecas | administrativo
+    filial:    Optional[str] = Query(None),  # única filial
+    filiais:   Optional[str] = Query(None),  # múltiplas separadas por ||
+    categoria: Optional[str] = Query(None),
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
+    filiais_list = filiais.split('||') if filiais else ([filial] if filial else [])
     return await get_stats(
         db, current_user.empresa_id,
-        periodo=periodo, grupo=grupo, filial=filial, categoria=categoria
+        periodo=periodo, grupo=grupo, filiais=filiais_list, categoria=categoria
     )
 
 
@@ -143,8 +145,9 @@ async def list_itens(
     periodo:   Optional[str] = Query(None),
     grupo:     Optional[str] = Query(None),
     filial:    Optional[str] = Query(None),
+    filiais:   Optional[str] = Query(None),  # múltiplas separadas por ||
     busca:     Optional[str] = Query(None),
-    categoria: Optional[str] = Query(None),  # pneus | pecas | administrativo
+    categoria: Optional[str] = Query(None),
     order_by: str           = Query('custo_final'),
     order:    str           = Query('desc'),
     page:     int           = Query(1, ge=1),
@@ -155,7 +158,10 @@ async def list_itens(
     filters = [MovimentacaoProduto.empresa_id == current_user.empresa_id]
     if periodo: filters.append(MovimentacaoProduto.periodo     == periodo)
     if grupo:   filters.append(MovimentacaoProduto.grupo       == grupo)
-    if filial:  filters.append(MovimentacaoProduto.nome_filial == filial)
+    filiais_list = filiais.split('||') if filiais else ([filial] if filial else [])
+    if filiais_list:
+        from sqlalchemy import or_ as _or
+        filters.append(_or(*[MovimentacaoProduto.nome_filial == f for f in filiais_list]))
     if busca:   filters.append(MovimentacaoProduto.nome_produto.ilike(f'%{busca}%'))
     if categoria:
         filters.extend(_categoria_filters(categoria))

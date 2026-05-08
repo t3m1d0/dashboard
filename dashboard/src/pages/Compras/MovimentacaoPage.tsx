@@ -8,7 +8,7 @@ import {
   Upload, RefreshCw, CheckCircle2, AlertTriangle, X,
   Package, TrendingUp, TrendingDown, Layers, Building2,
   ChevronLeft, ChevronRight, Search, FileSpreadsheet,
-  BarChart2, List, Info
+  BarChart2, List, Info, Check
 } from 'lucide-react'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -54,6 +54,130 @@ function classificar(grupo: string, nome: string): FiltroView {
 
 // ── Cores ─────────────────────────────────────────────────────
 const CORES = ['#f59e0b','#3b82f6','#10b981','#8b5cf6','#ef4444','#06b6d4','#ec4899','#f97316','#84cc16','#a78bfa']
+
+
+// ── Modal de seleção múltipla de filiais ──────────────────────
+function FilialModal({ filiais, selected, onClose, onApply }: {
+  filiais: string[]
+  selected: string[]
+  onClose: () => void
+  onApply: (sel: string[]) => void
+}) {
+  const [temp, setTemp]     = useState<string[]>(selected)
+  const [busca, setBusca]   = useState('')
+
+  const filtered = filiais.filter(f => f.toLowerCase().includes(busca.toLowerCase()))
+
+  const toggle = (f: string) => {
+    setTemp(prev => prev.includes(f) ? prev.filter(x => x !== f) : [...prev, f])
+  }
+  const toggleAll = () => {
+    setTemp(temp.length === filtered.length ? [] : [...filtered])
+  }
+
+  return (
+    <div className="fixed inset-0 z-[1001] flex items-center justify-center p-4" onClick={onClose}>
+      <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(6px)' }} />
+      <div className="relative z-10 flex flex-col" style={{ width: '100%', maxWidth: 520, maxHeight: '80vh', background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-lg)' }} onClick={e => e.stopPropagation()}>
+
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 pb-3" style={{ borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
+          <div>
+            <div style={{ fontSize: '0.95rem', fontWeight: 700 }}>Selecionar Filiais</div>
+            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: 2 }}>
+              {temp.length === 0 ? 'Nenhuma selecionada (todas)' : `${temp.length} de ${filiais.length} selecionadas`}
+            </div>
+          </div>
+          <button onClick={onClose} style={{ width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 8, cursor: 'pointer', color: 'var(--text-secondary)' }}>
+            <X size={13} />
+          </button>
+        </div>
+
+        {/* Search */}
+        <div className="p-3" style={{ borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
+          <div className="relative">
+            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
+            <input
+              type="text"
+              placeholder="Buscar filial…"
+              value={busca}
+              onChange={e => setBusca(e.target.value)}
+              autoFocus
+              style={{ width: '100%', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 8, padding: '7px 10px 7px 30px', fontSize: '0.82rem', color: 'var(--text-primary)', fontFamily: 'var(--font-body)', outline: 'none' }}
+            />
+          </div>
+        </div>
+
+        {/* Select all + count */}
+        <div className="flex items-center justify-between px-4 py-2" style={{ borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
+          <button onClick={toggleAll} style={{ fontSize: '0.75rem', color: '#f59e0b', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-body)', fontWeight: 600 }}>
+            {temp.length === filtered.length && filtered.length > 0 ? '✕ Desmarcar todas' : '✓ Selecionar todas'}
+            {busca ? ` (${filtered.length} visíveis)` : ''}
+          </button>
+          {temp.length > 0 && (
+            <button onClick={() => setTemp([])} style={{ fontSize: '0.72rem', color: '#f87171', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-body)' }}>
+              Limpar seleção
+            </button>
+          )}
+        </div>
+
+        {/* List */}
+        <div className="overflow-y-auto flex-1 p-2">
+          {filtered.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '24px', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
+              Nenhuma filial encontrada
+            </div>
+          ) : (
+            <div className="flex flex-col gap-0.5">
+              {filtered.map(f => {
+                const sel = temp.includes(f)
+                return (
+                  <button
+                    key={f}
+                    onClick={() => toggle(f)}
+                    className="flex items-center gap-2.5 w-full text-left px-3 py-2 rounded-lg transition-all"
+                    style={{
+                      background: sel ? 'rgba(245,158,11,0.08)' : 'transparent',
+                      border: `1px solid ${sel ? 'rgba(245,158,11,0.25)' : 'transparent'}`,
+                      cursor: 'pointer', fontFamily: 'var(--font-body)',
+                    }}
+                    onMouseEnter={e => { if (!sel) e.currentTarget.style.background = 'var(--bg-elevated)' }}
+                    onMouseLeave={e => { if (!sel) e.currentTarget.style.background = 'transparent' }}
+                  >
+                    {/* Checkbox */}
+                    <div style={{
+                      width: 18, height: 18, borderRadius: 5, flexShrink: 0,
+                      background: sel ? '#f59e0b' : 'var(--bg-elevated)',
+                      border: `2px solid ${sel ? '#f59e0b' : 'var(--border)'}`,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      transition: 'all 0.15s',
+                    }}>
+                      {sel && <Check size={11} color="#0a0a0a" strokeWidth={3} />}
+                    </div>
+                    <span style={{ fontSize: '0.82rem', color: sel ? 'var(--text-primary)' : 'var(--text-secondary)', fontWeight: sel ? 600 : 400 }}>{f}</span>
+                  </button>
+                )
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="flex gap-2.5 p-4" style={{ borderTop: '1px solid var(--border)', flexShrink: 0 }}>
+          <button onClick={onClose} style={{ padding: '9px 16px', borderRadius: 10, background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--text-secondary)', fontSize: '0.85rem', cursor: 'pointer', fontFamily: 'var(--font-body)' }}>
+            Cancelar
+          </button>
+          <button
+            onClick={() => { onApply(temp); onClose() }}
+            style={{ flex: 1, padding: '9px', borderRadius: 10, background: 'linear-gradient(135deg, #f59e0b, #ef4444)', border: 'none', color: '#fff', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-body)' }}
+          >
+            Aplicar {temp.length > 0 ? `(${temp.length} filial${temp.length > 1 ? 'is' : ''})` : '(todas)'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 // ── Modal de import ───────────────────────────────────────────
 function ImportModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (r: any) => void }) {
@@ -237,7 +361,8 @@ export function MovimentacaoPage() {
   // Filtros
   const [periodoSel, setPeriodoSel] = useState('')
   const [grupoSel, setGrupoSel]     = useState('')
-  const [filialSel, setFilialSel]   = useState('')
+  const [filialSels, setFilialSels] = useState<string[]>([])
+  const [filialModalOpen, setFilialModalOpen] = useState(false)
   const [busca, setBusca]           = useState('')
 
   // Lista
@@ -262,30 +387,30 @@ export function MovimentacaoPage() {
       const params: Record<string, string> = {}
       if (periodoSel)               params.periodo   = periodoSel
       if (grupoSel)                 params.grupo     = grupoSel
-      if (filialSel)                params.filial    = filialSel
+      if (filialSels.length > 0)    params['filiais'] = filialSels.join('||')
       if (filtroView !== 'todos')   params.categoria = filtroView
       const data = await ComprasAPI.getStats(Object.keys(params).length > 0 ? params : undefined)
       setStats(data)
     } catch { setStats(null) }
     finally { setLoading(false) }
-  }, [periodoSel, grupoSel, filialSel])
+  }, [periodoSel, grupoSel, filialSels, filtroView])
 
   const loadItens = useCallback(async () => {
     const params: Record<string, string | number> = { page: pageNum, page_size: 50 }
     if (periodoSel)             params.periodo   = periodoSel
     if (grupoSel)               params.grupo     = grupoSel
-    if (filialSel)              params.filial    = filialSel
+    if (filialSels.length > 0) params['filiais'] = filialSels.join('||')
     if (busca)                  params.busca     = busca
     if (filtroView !== 'todos') params.categoria = filtroView
     try {
       const data = await ComprasAPI.getItens(params)
       setItens(data)
     } catch {}
-  }, [periodoSel, grupoSel, filialSel, busca, pageNum])
+  }, [periodoSel, grupoSel, filialSels, busca, pageNum, filtroView])
 
   useEffect(() => { loadPeriodos() }, [])
-  useEffect(() => { if (periodoSel !== undefined) loadStats() }, [periodoSel, grupoSel, filialSel, filtroView])
-  useEffect(() => { if (viewMode === 'lista') loadItens() }, [viewMode, periodoSel, grupoSel, filialSel, busca, pageNum, filtroView])
+  useEffect(() => { if (periodoSel !== undefined) loadStats() }, [periodoSel, grupoSel, filialSels, filtroView])
+  useEffect(() => { if (viewMode === 'lista') loadItens() }, [viewMode, periodoSel, grupoSel, filialSels, busca, pageNum, filtroView])
 
   const hasData = stats && stats.kpis && stats.kpis.total > 0
 
@@ -391,13 +516,25 @@ export function MovimentacaoPage() {
           </select>
         )}
         {stats?.filtros?.filiais?.length > 0 && (
-          <select style={selStyle} value={filialSel} onChange={e => { setFilialSel(e.target.value); setPageNum(1) }}>
-            <option value="">Todas as filiais</option>
-            {stats.filtros.filiais.map((f: string) => <option key={f} value={f}>{f}</option>)}
-          </select>
+          <button
+            onClick={() => setFilialModalOpen(true)}
+            style={{
+              ...selStyle,
+              borderColor: filialSels.length > 0 ? 'rgba(245,158,11,0.5)' : 'var(--border)',
+              color: filialSels.length > 0 ? '#f59e0b' : 'var(--text-secondary)',
+              display: 'flex', alignItems: 'center', gap: 6,
+            }}
+          >
+            <Building2 size={13} />
+            {filialSels.length === 0
+              ? `Todas as filiais (${stats.filtros.filiais.length})`
+              : filialSels.length === 1
+              ? filialSels[0].length > 20 ? filialSels[0].slice(0,18)+'…' : filialSels[0]
+              : `${filialSels.length} filiais selecionadas`}
+          </button>
         )}
-        {(grupoSel || filialSel) && (
-          <button onClick={() => { setGrupoSel(''); setFilialSel(''); setPageNum(1) }}
+        {(grupoSel || filialSels.length > 0) && (
+          <button onClick={() => { setGrupoSel(''); setFilialSels([]); setPageNum(1) }}
             style={{ ...selStyle, color: '#f87171', borderColor: 'rgba(239,68,68,0.3)' }}>
             <X size={13} style={{ display: 'inline', marginRight: 4 }} />Limpar
           </button>
@@ -673,6 +810,16 @@ export function MovimentacaoPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Filial multi-select modal */}
+      {filialModalOpen && stats?.filtros?.filiais && (
+        <FilialModal
+          filiais={stats.filtros.filiais}
+          selected={filialSels}
+          onClose={() => setFilialModalOpen(false)}
+          onApply={(sel) => { setFilialSels(sel); setPageNum(1) }}
+        />
       )}
 
       {/* Import modal */}

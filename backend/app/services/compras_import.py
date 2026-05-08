@@ -204,8 +204,8 @@ async def get_stats(
     empresa_id: Optional[uuid.UUID],
     periodo:   Optional[str] = None,
     grupo:     Optional[str] = None,
-    filial:    Optional[str] = None,
-    categoria: Optional[str] = None,  # pneus | pecas | administrativo
+    filiais:   list = None,  # lista de filiais selecionadas
+    categoria: Optional[str] = None,
 ) -> dict:
     from sqlalchemy import desc
 
@@ -218,7 +218,9 @@ async def get_stats(
     if empresa_id: filters.append(MovimentacaoProduto.empresa_id == empresa_id)
     if periodo:    filters.append(MovimentacaoProduto.periodo    == periodo)
     if grupo:      filters.append(MovimentacaoProduto.grupo      == grupo)
-    if filial:     filters.append(MovimentacaoProduto.nome_filial == filial)
+    if filiais:
+        from sqlalchemy import or_ as _or2
+        filters.append(_or2(*[MovimentacaoProduto.nome_filial == f for f in filiais]))
 
     if categoria == 'pneus':
         filters.append(or_(
