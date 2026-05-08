@@ -228,10 +228,9 @@ export const ComprasAPI = {
     return request<any>(`/compras/movimentacao/itens${q}`)
   },
   getPeriodos: () => request<any[]>('/compras/movimentacao/periodos'),
-  importar: (file: File, periodo: string) => {
+  importar: (file: File) => {
     const form = new FormData()
     form.append('file', file)
-    form.append('periodo', periodo)
     const token = TokenStore.get()
     return fetch(`${BASE_URL}/compras/movimentacao/import`, {
       method: 'POST',

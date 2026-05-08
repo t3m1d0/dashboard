@@ -71,13 +71,45 @@ MAX_BYTES = settings.MAX_UPLOAD_SIZE_MB * 1024 * 1024
 
 
 # ── Import ────────────────────────────────────────────────────
+# Mapa de meses para extração do nome do arquivo
+_MESES_MAP = {
+    'janeiro':1,'fevereiro':2,'março':3,'marco':3,'abril':4,
+    'maio':5,'junho':6,'julho':7,'agosto':8,'setembro':9,
+    'outubro':10,'novembro':11,'dezembro':12
+}
+_MESES_NOME = {
+    1:'Janeiro',2:'Fevereiro',3:'Março',4:'Abril',5:'Maio',6:'Junho',
+    7:'Julho',8:'Agosto',9:'Setembro',10:'Outubro',11:'Novembro',12:'Dezembro'
+}
+
+def _extrair_mes_arquivo(filename: str):
+    """Extrai mês do nome do arquivo. Ex: MovimentacoesProdutos_Maio.xlsx → (5, 'Maio')"""
+    nome = (filename or '').lower()
+    for ext in ('.xlsx','.xls','.csv'): nome = nome.replace(ext,'')
+    partes = re.split(r'[_ \s-]', nome)
+    for parte in reversed(partes):
+        if parte in _MESES_MAP:
+            num = _MESES_MAP[parte]
+            return num, _MESES_NOME[num]
+    # fallback: busca no nome completo
+    for mes_nome, num in _MESES_MAP.items():
+        if mes_nome in nome:
+            return num, _MESES_NOME[num]
+    return None, None
+
+
 @router.post("/movimentacao/import")
 async def import_movimentacao(
     file: UploadFile = File(...),
-    periodo: str = Form(...),  # Ex: "2026-05" ou "Maio 2026"
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
+    """
+    Importa planilha de movimentação de produtos.
+    O mês é extraído automaticamente do nome do arquivo.
+    Formato esperado: MovimentacoesProdutos_MES.xlsx
+    Exemplo: MovimentacoesProdutos_Maio.xlsx
+    """
     content = await file.read()
     if len(content) > MAX_BYTES:
         raise HTTPException(413, f"Arquivo muito grande. Máximo: {settings.MAX_UPLOAD_SIZE_MB}MB")
@@ -86,11 +118,26 @@ async def import_movimentacao(
     if ext not in ('.xlsx', '.xls', '.csv'):
         raise HTTPException(400, "Use arquivo .xlsx, .xls ou .csv")
 
+    # Extrair mês do nome do arquivo
+    mes_num, mes_nome = _extrair_mes_arquivo(file.filename or '')
+    if not mes_num:
+        raise HTTPException(422,
+            "Não foi possível identificar o mês no nome do arquivo. "
+            "Use o formato: MovimentacoesProdutos_MES.xlsx "
+            "(ex: MovimentacoesProdutos_Maio.xlsx)"
+        )
+
+    ano_atual = __import__('datetime').date.today().year
+    periodo   = f"{ano_atual}-{mes_num:02d}"  # Ex: "2026-05"
+
     try:
         resultado = await importar_movimentacao(
             content, file.filename or 'import', periodo,
             current_user.empresa_id, db
         )
+        resultado['mes_nome'] = mes_nome
+        resultado['mes_num']  = mes_num
+        resultado['ano']      = ano_atual
     except ValueError as e:
         raise HTTPException(422, str(e))
     except Exception as e:
@@ -124,18 +171,26 @@ async def import_movimentacao(
 # ── Stats / Dashboard ─────────────────────────────────────────
 @router.get("/movimentacao/stats")
 async def get_movimentacao_stats(
-    periodo:   Optional[str] = Query(None),
+    periodo:   Optional[str] = Query(None),  # ex: '2026-05'
+    mes:       Optional[int] = Query(None, ge=1, le=12),
+    ano:       Optional[int] = Query(None),
     grupo:     Optional[str] = Query(None),
-    filial:    Optional[str] = Query(None),  # única filial
+    filial:    Optional[str] = Query(None),
     filiais:   Optional[str] = Query(None),  # múltiplas separadas por ||
     categoria: Optional[str] = Query(None),
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
     filiais_list = filiais.split('||') if filiais else ([filial] if filial else [])
+    # Constrói periodo a partir de mes+ano se não veio direto
+    if not periodo and mes and ano:
+        periodo = f'{ano}-{mes:02d}'
+    elif not periodo and ano:
+        periodo = None  # filtra por ano no service
     return await get_stats(
         db, current_user.empresa_id,
-        periodo=periodo, grupo=grupo, filiais=filiais_list, categoria=categoria
+        periodo=periodo, mes=mes, ano=ano,
+        grupo=grupo, filiais=filiais_list, categoria=categoria
     )
 
 

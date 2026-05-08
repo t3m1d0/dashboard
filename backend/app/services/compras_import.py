@@ -202,9 +202,11 @@ async def _batch_update(db: AsyncSession, rows: list):
 async def get_stats(
     db: AsyncSession,
     empresa_id: Optional[uuid.UUID],
-    periodo:   Optional[str] = None,
+    periodo:   Optional[str] = None,  # YYYY-MM específico
+    mes:       Optional[int] = None,  # 1-12 filtro livre
+    ano:       Optional[int] = None,  # filtro por ano
     grupo:     Optional[str] = None,
-    filiais:   list = None,  # lista de filiais selecionadas
+    filiais:   list = None,
     categoria: Optional[str] = None,
 ) -> dict:
     from sqlalchemy import desc
@@ -214,9 +216,17 @@ async def get_stats(
     _ADMIN_KW_SVC = ['MATERIAIS APLICADOS','INSUMO','UNIFORME','HIGIENE','COPA','COZINHA','FERRAMENTA','ESCRITORIO','ESCRITÓRIO','MATERIAL DE ESCRITOR','MATERIAL DE OBRA']
     from sqlalchemy import or_, case
 
+    from sqlalchemy import extract as _extract
     filters = []
     if empresa_id: filters.append(MovimentacaoProduto.empresa_id == empresa_id)
     if periodo:    filters.append(MovimentacaoProduto.periodo    == periodo)
+    elif mes and ano:
+        # Filtra pelo periodo YYYY-MM derivado
+        periodo_str = f'{ano}-{mes:02d}'
+        filters.append(MovimentacaoProduto.periodo == periodo_str)
+    elif ano:
+        # Filtra todos os períodos do ano
+        filters.append(MovimentacaoProduto.periodo.like(f'{ano}-%'))
     if grupo:      filters.append(MovimentacaoProduto.grupo      == grupo)
     if filiais:
         from sqlalchemy import or_ as _or2

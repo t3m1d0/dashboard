@@ -182,10 +182,6 @@ function FilialModal({ filiais, selected, onClose, onApply }: {
 // ── Modal de import ───────────────────────────────────────────
 function ImportModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (r: any) => void }) {
   const [file, setFile]       = useState<File | null>(null)
-  const [periodo, setPeriodo] = useState(() => {
-    const d = new Date()
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
-  })
   const [loading, setLoading] = useState(false)
   const [result, setResult]   = useState<any>(null)
   const [error, setError]     = useState<string | null>(null)
@@ -193,10 +189,10 @@ function ImportModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
   const inputRef              = useRef<HTMLInputElement>(null)
 
   const doImport = async () => {
-    if (!file || !periodo.trim()) return
+    if (!file) return
     setLoading(true); setError(null)
     try {
-      const r = await ComprasAPI.importar(file, periodo.trim())
+      const r = await ComprasAPI.importar(file)
       setResult(r)
       onSuccess(r)
     } catch (e: any) {
@@ -250,19 +246,15 @@ function ImportModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
             </div>
           </div>
 
-          {/* Período */}
-          <div>
-            <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>
-              Período / Referência
-            </label>
-            <input
-              style={inputStyle}
-              value={periodo}
-              onChange={e => setPeriodo(e.target.value)}
-              placeholder="Ex: 2026-05 ou Maio 2026"
-            />
-            <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: 4 }}>
-              Identifica o snapshot — permite comparar períodos diferentes
+          {/* Info automática */}
+          <div className="rounded-xl p-3" style={{ background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.2)' }}>
+            <div className="flex items-center gap-2 mb-1.5">
+              <Info size={13} style={{ color: '#f59e0b', flexShrink: 0 }} />
+              <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#f59e0b' }}>O mês é detectado automaticamente</span>
+            </div>
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+              Nomeie o arquivo como <strong style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-mono)', fontSize: '0.7rem' }}>MovimentacoesProdutos_MES.xlsx</strong><br/>
+              Exemplos: <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.68rem', color: '#f59e0b' }}>_Janeiro</span> · <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.68rem', color: '#f59e0b' }}>_Maio</span> · <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.68rem', color: '#f59e0b' }}>_Dezembro</span>
             </div>
           </div>
 
@@ -302,7 +294,7 @@ function ImportModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
           {result && (
             <div className="rounded-xl overflow-hidden" style={{ border: '1px solid rgba(16,185,129,0.3)' }}>
               <div className="p-3.5" style={{ background: 'rgba(16,185,129,0.08)', borderBottom: '1px solid rgba(16,185,129,0.2)' }}>
-                <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#10b981', marginBottom: 10 }}>Importação concluída! Período: {result.periodo}</div>
+                <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#10b981', marginBottom: 10 }}>Importação concluída! {result.mes_nome ? `Mês: ${result.mes_nome} ${result.ano}` : `Período: ${result.periodo}`}</div>
                 <div className="grid grid-cols-3 gap-2">
                   {[
                     { label: 'Inseridos',   value: result.inseridos,  color: '#10b981' },
@@ -336,8 +328,8 @@ function ImportModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
             ) : (
               <>
                 <button onClick={onClose} style={{ padding: '10px 16px', borderRadius: 10, background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--text-secondary)', fontSize: '0.85rem', cursor: 'pointer', fontFamily: 'var(--font-body)' }}>Cancelar</button>
-                <button onClick={doImport} disabled={!file || !periodo || loading}
-                  style={{ flex: 1, padding: '10px', borderRadius: 10, background: file && periodo && !loading ? 'linear-gradient(135deg, #f59e0b, #ef4444)' : 'var(--bg-elevated)', border: 'none', color: file && periodo && !loading ? '#fff' : 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 600, cursor: file && periodo && !loading ? 'pointer' : 'not-allowed', fontFamily: 'var(--font-body)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                <button onClick={doImport} disabled={!file || loading}
+                  style={{ flex: 1, padding: '10px', borderRadius: 10, background: file && !loading ? 'linear-gradient(135deg, #f59e0b, #ef4444)' : 'var(--bg-elevated)', border: 'none', color: file && !loading ? '#fff' : 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 600, cursor: file && !loading ? 'pointer' : 'not-allowed', fontFamily: 'var(--font-body)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                   {loading ? <><div style={{ width: 16, height: 16, borderRadius: '50%', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', animation: 'spin 0.7s linear infinite' }} /> Importando…</> : <><Upload size={14} /> Importar Agora</>}
                 </button>
               </>
@@ -359,7 +351,9 @@ export function MovimentacaoPage() {
   const [viewMode, setViewMode]     = useState<'dashboard' | 'lista'>('dashboard')
 
   // Filtros
-  const [periodoSel, setPeriodoSel] = useState('')
+  const [mesSel, setMesSel]         = useState(0)  // 0 = todos
+  const [anoSel, setAnoSel]         = useState(new Date().getFullYear())
+  const periodoSel = mesSel > 0 ? `${anoSel}-${String(mesSel).padStart(2,'0')}` : ''
   const [grupoSel, setGrupoSel]     = useState('')
   const [filialSels, setFilialSels] = useState<string[]>([])
   const [filialModalOpen, setFilialModalOpen] = useState(false)
@@ -371,12 +365,17 @@ export function MovimentacaoPage() {
   const [detalheProd, setDetalheProd] = useState<any>(null)
   const [filtroView, setFiltroView]   = useState<FiltroView>('todos')
 
+  const MESES_NOMES = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
+
   const loadPeriodos = useCallback(async () => {
     try {
       const data = await ComprasAPI.getPeriodos()
       setPeriodos(data)
-      if (data.length > 0 && !periodoSel) {
-        setPeriodoSel(data[0].periodo)
+      // Seleciona o período mais recente automaticamente
+      if (data.length > 0) {
+        const [ano, mes] = data[0].periodo.split('-').map(Number)
+        setAnoSel(ano || new Date().getFullYear())
+        setMesSel(mes || 0)
       }
     } catch {}
   }, [])
@@ -385,7 +384,6 @@ export function MovimentacaoPage() {
     setLoading(true)
     try {
       const params: Record<string, string> = {}
-      if (periodoSel)               params.periodo   = periodoSel
       if (grupoSel)                 params.grupo     = grupoSel
       if (filialSels.length > 0)    params['filiais'] = filialSels.join('||')
       if (filtroView !== 'todos')   params.categoria = filtroView
@@ -393,11 +391,12 @@ export function MovimentacaoPage() {
       setStats(data)
     } catch { setStats(null) }
     finally { setLoading(false) }
-  }, [periodoSel, grupoSel, filialSels, filtroView])
+  }, [mesSel, anoSel, grupoSel, filialSels, filtroView])
 
   const loadItens = useCallback(async () => {
     const params: Record<string, string | number> = { page: pageNum, page_size: 50 }
-    if (periodoSel)             params.periodo   = periodoSel
+    if (mesSel > 0)            params.mes       = mesSel
+    params.ano                                   = anoSel
     if (grupoSel)               params.grupo     = grupoSel
     if (filialSels.length > 0) params['filiais'] = filialSels.join('||')
     if (busca)                  params.busca     = busca
@@ -406,11 +405,11 @@ export function MovimentacaoPage() {
       const data = await ComprasAPI.getItens(params)
       setItens(data)
     } catch {}
-  }, [periodoSel, grupoSel, filialSels, busca, pageNum, filtroView])
+  }, [mesSel, anoSel, grupoSel, filialSels, busca, pageNum, filtroView])
 
   useEffect(() => { loadPeriodos() }, [])
-  useEffect(() => { if (periodoSel !== undefined) loadStats() }, [periodoSel, grupoSel, filialSels, filtroView])
-  useEffect(() => { if (viewMode === 'lista') loadItens() }, [viewMode, periodoSel, grupoSel, filialSels, busca, pageNum, filtroView])
+  useEffect(() => { loadStats() }, [mesSel, anoSel, grupoSel, filialSels, filtroView])
+  useEffect(() => { if (viewMode === 'lista') loadItens() }, [viewMode, mesSel, anoSel, grupoSel, filialSels, busca, pageNum, filtroView])
 
   const hasData = stats && stats.kpis && stats.kpis.total > 0
 
@@ -497,18 +496,71 @@ export function MovimentacaoPage() {
         )}
       </div>
 
+      {/* Filtro por mês */}
+      {periodos.length > 0 && (
+        <div className="mb-4">
+          <div style={{ fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-muted)', marginBottom: 10 }}>
+            Período — {anoSel}
+          </div>
+          <div className="flex gap-1.5 flex-wrap items-center">
+            {/* Todos */}
+            <button
+              onClick={() => setMesSel(0)}
+              style={{
+                padding: '5px 14px', borderRadius: 8, fontSize: '0.78rem', fontWeight: 600,
+                background: mesSel === 0 ? '#f59e0b' : 'var(--bg-elevated)',
+                color: mesSel === 0 ? '#0a0a0a' : 'var(--text-secondary)',
+                border: `1px solid ${mesSel === 0 ? '#f59e0b' : 'var(--border)'}`,
+                cursor: 'pointer', fontFamily: 'var(--font-body)',
+              }}
+            >
+              Todos
+            </button>
+            {/* Meses importados */}
+            {periodos
+              .filter((p: any) => p.periodo.startsWith(String(anoSel)))
+              .sort((a: any, b: any) => a.periodo.localeCompare(b.periodo))
+              .map((p: any) => {
+                const mesNum = parseInt(p.periodo.split('-')[1])
+                const isActive = mesSel === mesNum
+                return (
+                  <button
+                    key={p.periodo}
+                    onClick={() => setMesSel(mesNum)}
+                    title={`${p.registros.toLocaleString('pt-BR')} registros · ${p.filiais} filiais · ${p.custo_total.toLocaleString('pt-BR',{style:'currency',currency:'BRL',minimumFractionDigits:0})}`}
+                    style={{
+                      padding: '5px 14px', borderRadius: 8, fontSize: '0.78rem', fontWeight: 600,
+                      background: isActive ? '#f59e0b' : 'var(--bg-card)',
+                      color: isActive ? '#0a0a0a' : 'var(--text-secondary)',
+                      border: `1px solid ${isActive ? '#f59e0b' : 'var(--border)'}`,
+                      cursor: 'pointer', fontFamily: 'var(--font-body)',
+                      transition: 'all 0.15s',
+                    }}
+                  >
+                    {MESES_NOMES[mesNum]}
+                  </button>
+                )
+              })
+            }
+            {/* Seletor de ano se há múltiplos anos */}
+            {[...new Set(periodos.map((p: any) => p.periodo.split('-')[0]))].length > 1 && (
+              <select
+                value={anoSel}
+                onChange={e => { setAnoSel(Number(e.target.value)); setMesSel(0) }}
+                style={{ ...selStyle, marginLeft: 8 }}
+              >
+                {[...new Set(periodos.map((p: any) => parseInt(p.periodo.split('-')[0])))].sort((a,b)=>b-a).map((a: number) => (
+                  <option key={a} value={a}>{a}</option>
+                ))}
+              </select>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Filtros */}
       <div className="flex gap-2 mb-5 flex-wrap">
-        {periodos.length > 0 && (
-          <select style={selStyle} value={periodoSel} onChange={e => setPeriodoSel(e.target.value)}>
-            <option value="">Todos os períodos</option>
-            {periodos.map((p: any) => (
-              <option key={p.periodo} value={p.periodo}>
-                {p.periodo} ({p.registros.toLocaleString('pt-BR')} registros)
-              </option>
-            ))}
-          </select>
-        )}
+
         {stats?.filtros?.grupos?.length > 0 && (
           <select style={selStyle} value={grupoSel} onChange={e => { setGrupoSel(e.target.value); setPageNum(1) }}>
             <option value="">Todos os grupos</option>
