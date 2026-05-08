@@ -270,6 +270,27 @@ async def list_itens(
 
 
 # ── Períodos disponíveis ──────────────────────────────────────
+
+
+@router.delete("/movimentacao/periodo/{periodo}")
+async def delete_periodo(
+    periodo: str,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    """Remove todos os registros de um período específico (ex: 2026-05)."""
+    from sqlalchemy import delete as sa_delete
+    result = await db.execute(
+        sa_delete(MovimentacaoProduto).where(
+            and_(
+                MovimentacaoProduto.empresa_id == current_user.empresa_id,
+                MovimentacaoProduto.periodo    == periodo,
+            )
+        )
+    )
+    await db.flush()
+    return {"ok": True, "periodo": periodo, "removidos": result.rowcount}
+
 @router.get("/movimentacao/periodos")
 async def list_periodos(
     db: AsyncSession = Depends(get_db),

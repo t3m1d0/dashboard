@@ -228,6 +228,8 @@ export const ComprasAPI = {
     return request<any>(`/compras/movimentacao/itens${q}`)
   },
   getPeriodos: () => request<any[]>('/compras/movimentacao/periodos'),
+  deletePeriodo: (periodo: string) =>
+    request<any>(`/compras/movimentacao/periodo/${encodeURIComponent(periodo)}`, { method: 'DELETE' }),
   importar: (file: File) => {
     const form = new FormData()
     form.append('file', file)

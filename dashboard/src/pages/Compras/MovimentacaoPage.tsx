@@ -6,7 +6,7 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { ComprasAPI } from '@/services/api'
 import {
   Upload, RefreshCw, CheckCircle2, AlertTriangle, X,
-  Package, TrendingUp, TrendingDown, Layers, Building2,
+  Package, TrendingUp, TrendingDown, Layers, Building2, Trash2,
   ChevronLeft, ChevronRight, Search, FileSpreadsheet,
   BarChart2, List, Info, Check
 } from 'lucide-react'
@@ -363,6 +363,7 @@ export function MovimentacaoPage() {
   const [itens, setItens]           = useState<any>(null)
   const [pageNum, setPageNum]       = useState(1)
   const [detalheProd, setDetalheProd] = useState<any>(null)
+  const [deleting, setDeleting]       = useState(false)
   const [filtroView, setFiltroView]   = useState<FiltroView>('todos')
 
   const MESES_NOMES = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
@@ -406,6 +407,22 @@ export function MovimentacaoPage() {
       setItens(data)
     } catch {}
   }, [mesSel, anoSel, grupoSel, filialSels, busca, pageNum, filtroView])
+
+  const handleDeletePeriodo = async () => {
+    if (mesSel === 0) return
+    const mesNome = MESES_NOMES[mesSel]
+    const periodo = `${anoSel}-${String(mesSel).padStart(2,'0')}`
+    if (!confirm(`Excluir todos os dados de ${mesNome} ${anoSel}?\n\nEsta ação não pode ser desfeita.`)) return
+    setDeleting(true)
+    try {
+      await ComprasAPI.deletePeriodo(periodo)
+      setMesSel(0)
+      await loadPeriodos()
+      await loadStats()
+    } catch (e: any) {
+      alert('Erro ao excluir: ' + e.message)
+    } finally { setDeleting(false) }
+  }
 
   useEffect(() => { loadPeriodos() }, [])
   useEffect(() => { loadStats() }, [mesSel, anoSel, grupoSel, filialSels, filtroView])
@@ -553,6 +570,30 @@ export function MovimentacaoPage() {
                   <option key={a} value={a}>{a}</option>
                 ))}
               </select>
+            )}
+
+            {/* Botão de limpar mês selecionado */}
+            {mesSel > 0 && (
+              <button
+                onClick={handleDeletePeriodo}
+                disabled={deleting}
+                title={`Excluir todos os dados de ${MESES_NOMES[mesSel]} ${anoSel}`}
+                style={{
+                  marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6,
+                  padding: '5px 12px', borderRadius: 8, fontSize: '0.75rem', fontWeight: 600,
+                  background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)',
+                  color: '#f87171', cursor: deleting ? 'not-allowed' : 'pointer',
+                  fontFamily: 'var(--font-body)', opacity: deleting ? 0.6 : 1,
+                  transition: 'all 0.2s',
+                }}
+                onMouseEnter={e => { if (!deleting) { e.currentTarget.style.background='rgba(239,68,68,0.15)'; e.currentTarget.style.borderColor='rgba(239,68,68,0.5)' }}}
+                onMouseLeave={e => { e.currentTarget.style.background='rgba(239,68,68,0.08)'; e.currentTarget.style.borderColor='rgba(239,68,68,0.25)' }}
+              >
+                {deleting
+                  ? <><div style={{ width: 12, height: 12, borderRadius: '50%', border: '2px solid rgba(248,113,113,0.3)', borderTopColor: '#f87171', animation: 'spin 0.7s linear infinite' }} /> Excluindo…</>
+                  : <><Trash2 size={13} /> Limpar {MESES_NOMES[mesSel]}</>
+                }
+              </button>
             )}
           </div>
         </div>
