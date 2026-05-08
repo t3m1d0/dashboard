@@ -20,6 +20,38 @@ const fmtBRL  = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', cu
 const fmtNum  = (v: number) => Math.round(v).toLocaleString('pt-BR')
 const fmtDec  = (v: number) => v.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 1 })
 
+// ── Classificação dos 3 filtros ──────────────────────────────
+// Padrão de medida de pneu: 175 70 14, 185/65 R15, etc.
+const PNEU_MEDIDA_RE = /\b\d{3}[\s/]\d{2}[\s/R]?\d{2}\b/i
+
+// Grupos administrativos (aceita variações)
+const ADMIN_GRUPO_KEYWORDS = [
+  'MATERIAIS APLICADOS', 'INSUMO', 'UNIFORME',
+  'HIGIENE', 'COPA', 'COZINHA', 'FERRAMENTA', 'ESCRITORIO', 'ESCRITÓRIO',
+  'MATERIAL DE ESCRITOR', 'MATERIAL DE OBRA',
+]
+
+type FiltroView = 'todos' | 'pneus' | 'pecas' | 'administrativo'
+
+function isPneu(grupo: string, nome: string): boolean {
+  const g = grupo.toUpperCase()
+  const n = nome.toUpperCase()
+  if (g.includes('PNEU') || n.includes('PNEU')) return true
+  if (PNEU_MEDIDA_RE.test(g) || PNEU_MEDIDA_RE.test(n)) return true
+  return false
+}
+
+function isAdministrativo(grupo: string): boolean {
+  const g = grupo.toUpperCase()
+  return ADMIN_GRUPO_KEYWORDS.some(kw => g.includes(kw.toUpperCase()))
+}
+
+function classificar(grupo: string, nome: string): FiltroView {
+  if (isAdministrativo(grupo)) return 'administrativo'
+  if (isPneu(grupo, nome)) return 'pneus'
+  return 'pecas'
+}
+
 // ── Cores ─────────────────────────────────────────────────────
 const CORES = ['#f59e0b','#3b82f6','#10b981','#8b5cf6','#ef4444','#06b6d4','#ec4899','#f97316','#84cc16','#a78bfa']
 
@@ -212,6 +244,7 @@ export function MovimentacaoPage() {
   const [itens, setItens]           = useState<any>(null)
   const [pageNum, setPageNum]       = useState(1)
   const [detalheProd, setDetalheProd] = useState<any>(null)
+  const [filtroView, setFiltroView]   = useState<FiltroView>('todos')
 
   const loadPeriodos = useCallback(async () => {
     try {
@@ -227,9 +260,10 @@ export function MovimentacaoPage() {
     setLoading(true)
     try {
       const params: Record<string, string> = {}
-      if (periodoSel) params.periodo = periodoSel
-      if (grupoSel)   params.grupo   = grupoSel
-      if (filialSel)  params.filial  = filialSel
+      if (periodoSel)               params.periodo   = periodoSel
+      if (grupoSel)                 params.grupo     = grupoSel
+      if (filialSel)                params.filial    = filialSel
+      if (filtroView !== 'todos')   params.categoria = filtroView
       const data = await ComprasAPI.getStats(Object.keys(params).length > 0 ? params : undefined)
       setStats(data)
     } catch { setStats(null) }
@@ -238,10 +272,11 @@ export function MovimentacaoPage() {
 
   const loadItens = useCallback(async () => {
     const params: Record<string, string | number> = { page: pageNum, page_size: 50 }
-    if (periodoSel) params.periodo = periodoSel
-    if (grupoSel)   params.grupo   = grupoSel
-    if (filialSel)  params.filial  = filialSel
-    if (busca)      params.busca   = busca
+    if (periodoSel)             params.periodo   = periodoSel
+    if (grupoSel)               params.grupo     = grupoSel
+    if (filialSel)              params.filial    = filialSel
+    if (busca)                  params.busca     = busca
+    if (filtroView !== 'todos') params.categoria = filtroView
     try {
       const data = await ComprasAPI.getItens(params)
       setItens(data)
@@ -249,8 +284,8 @@ export function MovimentacaoPage() {
   }, [periodoSel, grupoSel, filialSel, busca, pageNum])
 
   useEffect(() => { loadPeriodos() }, [])
-  useEffect(() => { if (periodoSel !== undefined) loadStats() }, [periodoSel, grupoSel, filialSel])
-  useEffect(() => { if (viewMode === 'lista') loadItens() }, [viewMode, periodoSel, grupoSel, filialSel, busca, pageNum])
+  useEffect(() => { if (periodoSel !== undefined) loadStats() }, [periodoSel, grupoSel, filialSel, filtroView])
+  useEffect(() => { if (viewMode === 'lista') loadItens() }, [viewMode, periodoSel, grupoSel, filialSel, busca, pageNum, filtroView])
 
   const hasData = stats && stats.kpis && stats.kpis.total > 0
 
@@ -296,6 +331,45 @@ export function MovimentacaoPage() {
             <Upload size={14} /> Importar Excel
           </button>
         </div>
+      </div>
+
+      {/* Filtro de categoria */}
+      <div className="flex gap-2 mb-4 flex-wrap">
+        {([
+          { id: 'todos',          label: '🔍 Todos',          desc: 'Visão completa'                     },
+          { id: 'pneus',          label: '🔵 Pneus',          desc: 'Por nome "PNEU" ou medida'          },
+          { id: 'pecas',          label: '🔧 Peças / Serviços', desc: 'Excluindo pneus e administrativos' },
+          { id: 'administrativo', label: '📦 Administrativo',  desc: 'Ferramentas, uniformes, escritório' },
+        ] as const).map(opt => (
+          <button
+            key={opt.id}
+            onClick={() => { setFiltroView(opt.id); setPageNum(1) }}
+            title={opt.desc}
+            style={{
+              padding: '7px 16px', borderRadius: 10,
+              background: filtroView === opt.id
+                ? opt.id === 'pneus' ? '#3b82f6'
+                : opt.id === 'pecas' ? '#10b981'
+                : opt.id === 'administrativo' ? '#8b5cf6'
+                : '#f59e0b'
+                : 'var(--bg-elevated)',
+              color: filtroView === opt.id ? '#fff' : 'var(--text-secondary)',
+              border: `1px solid ${filtroView === opt.id ? 'transparent' : 'var(--border)'}`,
+              fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer',
+              fontFamily: 'var(--font-body)', transition: 'all 0.2s',
+              boxShadow: filtroView === opt.id ? '0 2px 8px rgba(0,0,0,0.3)' : 'none',
+            }}
+          >
+            {opt.label}
+          </button>
+        ))}
+        {filtroView !== 'todos' && (
+          <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', alignSelf: 'center', marginLeft: 4 }}>
+            {filtroView === 'pneus' ? 'Produtos com "PNEU" no nome ou grupo, ou medidas como 175 70 14'
+            : filtroView === 'pecas' ? 'Peças, serviços e produtos — excluindo pneus e administrativos'
+            : 'FERRAMENTAS · UNIFORMES · HIGIENE · COPA E COZINHA · MATERIAL DE ESCRITÓRIO · INSUMOS'}
+          </span>
+        )}
       </div>
 
       {/* Filtros */}

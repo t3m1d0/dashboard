@@ -202,17 +202,39 @@ async def _batch_update(db: AsyncSession, rows: list):
 async def get_stats(
     db: AsyncSession,
     empresa_id: Optional[uuid.UUID],
-    periodo: Optional[str] = None,
-    grupo: Optional[str]   = None,
-    filial: Optional[str]  = None,
+    periodo:   Optional[str] = None,
+    grupo:     Optional[str] = None,
+    filial:    Optional[str] = None,
+    categoria: Optional[str] = None,  # pneus | pecas | administrativo
 ) -> dict:
     from sqlalchemy import desc
+
+    import re as _re
+    _PNEU_RE_SVC  = _re.compile(r'\d{3}[\s/]\d{2}[\s/R]?\d{2}', _re.IGNORECASE)
+    _ADMIN_KW_SVC = ['MATERIAIS APLICADOS','INSUMO','UNIFORME','HIGIENE','COPA','COZINHA','FERRAMENTA','ESCRITORIO','ESCRITÓRIO','MATERIAL DE ESCRITOR','MATERIAL DE OBRA']
+    from sqlalchemy import or_, case
 
     filters = []
     if empresa_id: filters.append(MovimentacaoProduto.empresa_id == empresa_id)
     if periodo:    filters.append(MovimentacaoProduto.periodo    == periodo)
     if grupo:      filters.append(MovimentacaoProduto.grupo      == grupo)
     if filial:     filters.append(MovimentacaoProduto.nome_filial == filial)
+
+    if categoria == 'pneus':
+        filters.append(or_(
+            MovimentacaoProduto.grupo.ilike('%PNEU%'),
+            MovimentacaoProduto.nome_produto.ilike('%PNEU%'),
+            MovimentacaoProduto.grupo.op('~')(r'\d{3}[\s/]\d{2}[\s/R]?\d{2}'),
+        ))
+    elif categoria == 'administrativo':
+        filters.append(or_(*[MovimentacaoProduto.grupo.ilike(f'%{kw}%') for kw in _ADMIN_KW_SVC]))
+    elif categoria == 'pecas':
+        filters.append(and_(
+            ~MovimentacaoProduto.grupo.ilike('%PNEU%'),
+            ~MovimentacaoProduto.nome_produto.ilike('%PNEU%'),
+            ~MovimentacaoProduto.grupo.op('~')(r'\d{3}[\s/]\d{2}[\s/R]?\d{2}'),
+            *[~MovimentacaoProduto.grupo.ilike(f'%{kw}%') for kw in _ADMIN_KW_SVC],
+        ))
 
     base = and_(*filters) if filters else True
 

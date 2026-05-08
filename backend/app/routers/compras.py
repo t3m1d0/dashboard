@@ -16,6 +16,57 @@ from app.services import UploadService, AuditService
 
 router = APIRouter(prefix="/compras", tags=["Compras"])
 
+import re
+
+# ── Classificação de produtos ─────────────────────────────────
+_PNEU_RE    = re.compile(r'\b\d{3}[\s/]\d{2}[\s/R]?\d{2}\b', re.IGNORECASE)
+_ADMIN_KW   = [
+    'MATERIAIS APLICADOS', 'INSUMO', 'UNIFORME', 'HIGIENE',
+    'COPA', 'COZINHA', 'FERRAMENTA', 'ESCRITORIO', 'ESCRITÓRIO',
+    'MATERIAL DE ESCRITOR', 'MATERIAL DE OBRA',
+]
+
+def _is_pneu(grupo: str, nome: str) -> bool:
+    g, n = grupo.upper(), nome.upper()
+    if 'PNEU' in g or 'PNEU' in n: return True
+    if _PNEU_RE.search(g) or _PNEU_RE.search(n): return True
+    return False
+
+def _is_admin(grupo: str) -> bool:
+    g = grupo.upper()
+    return any(kw in g for kw in _ADMIN_KW)
+
+def _categoria_filters(categoria: str):
+    """Retorna filtros SQLAlchemy para a categoria selecionada."""
+    from sqlalchemy import or_, and_, func
+    if categoria == 'pneus':
+        return [or_(
+            MovimentacaoProduto.grupo.ilike('%PNEU%'),
+            MovimentacaoProduto.nome_produto.ilike('%PNEU%'),
+            MovimentacaoProduto.grupo.op('~')(r'\d{3}[\s/]\d{2}[\s/R]?\d{2}'),
+        )]
+    elif categoria == 'administrativo':
+        kw_filters = [
+            MovimentacaoProduto.grupo.ilike(f'%{kw}%')
+            for kw in _ADMIN_KW
+        ]
+        return [or_(*kw_filters)]
+    elif categoria == 'pecas':
+        # Nem pneu nem administrativo
+        not_pneu = and_(
+            ~MovimentacaoProduto.grupo.ilike('%PNEU%'),
+            ~MovimentacaoProduto.nome_produto.ilike('%PNEU%'),
+            ~MovimentacaoProduto.grupo.op('~')(r'\d{3}[\s/]\d{2}[\s/R]?\d{2}'),
+        )
+        not_admin_filters = [
+            ~MovimentacaoProduto.grupo.ilike(f'%{kw}%')
+            for kw in _ADMIN_KW
+        ]
+        return [not_pneu, and_(*not_admin_filters)]
+    return []
+
+
+
 MAX_BYTES = settings.MAX_UPLOAD_SIZE_MB * 1024 * 1024
 
 
@@ -73,25 +124,27 @@ async def import_movimentacao(
 # ── Stats / Dashboard ─────────────────────────────────────────
 @router.get("/movimentacao/stats")
 async def get_movimentacao_stats(
-    periodo: Optional[str] = Query(None),
-    grupo:   Optional[str] = Query(None),
-    filial:  Optional[str] = Query(None),
+    periodo:   Optional[str] = Query(None),
+    grupo:     Optional[str] = Query(None),
+    filial:    Optional[str] = Query(None),
+    categoria: Optional[str] = Query(None),  # pneus | pecas | administrativo
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
     return await get_stats(
         db, current_user.empresa_id,
-        periodo=periodo, grupo=grupo, filial=filial
+        periodo=periodo, grupo=grupo, filial=filial, categoria=categoria
     )
 
 
 # ── Listagem ──────────────────────────────────────────────────
 @router.get("/movimentacao/itens")
 async def list_itens(
-    periodo:  Optional[str] = Query(None),
-    grupo:    Optional[str] = Query(None),
-    filial:   Optional[str] = Query(None),
-    busca:    Optional[str] = Query(None),
+    periodo:   Optional[str] = Query(None),
+    grupo:     Optional[str] = Query(None),
+    filial:    Optional[str] = Query(None),
+    busca:     Optional[str] = Query(None),
+    categoria: Optional[str] = Query(None),  # pneus | pecas | administrativo
     order_by: str           = Query('custo_final'),
     order:    str           = Query('desc'),
     page:     int           = Query(1, ge=1),
@@ -104,6 +157,8 @@ async def list_itens(
     if grupo:   filters.append(MovimentacaoProduto.grupo       == grupo)
     if filial:  filters.append(MovimentacaoProduto.nome_filial == filial)
     if busca:   filters.append(MovimentacaoProduto.nome_produto.ilike(f'%{busca}%'))
+    if categoria:
+        filters.extend(_categoria_filters(categoria))
 
     base = and_(*filters)
 
