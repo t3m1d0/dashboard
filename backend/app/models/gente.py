@@ -81,11 +81,16 @@ class GenteFolha(Base):
     nome:        Mapped[str]            = mapped_column(String(300), nullable=False)
 
     # Lotação
-    empresa:     Mapped[Optional[str]]  = mapped_column(String(200))
-    departamento: Mapped[Optional[str]] = mapped_column(String(200))
-    cargo:       Mapped[Optional[str]]  = mapped_column(String(200))
-    centro_custo: Mapped[Optional[str]] = mapped_column(String(200))
-    filial:      Mapped[Optional[str]]  = mapped_column(String(200))
+    empresa:       Mapped[Optional[str]]  = mapped_column(String(200))
+    departamento:  Mapped[Optional[str]] = mapped_column(String(200))
+    cargo:         Mapped[Optional[str]] = mapped_column(String(200))
+    centro_custo:  Mapped[Optional[str]] = mapped_column(String(200))
+    filial:        Mapped[Optional[str]] = mapped_column(String(200))
+
+    # Colaborador (campos do relatório MBG)
+    data_admissao: Mapped[Optional[str]] = mapped_column(String(20))
+    situacao:      Mapped[Optional[str]] = mapped_column(String(50))
+    tipo_contrato: Mapped[Optional[str]] = mapped_column(String(100))
 
     # Verba / Rubrica (estrutura aberta para qualquer ERP)
     verba_codigo: Mapped[Optional[str]] = mapped_column(String(50))

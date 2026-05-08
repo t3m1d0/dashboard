@@ -87,6 +87,7 @@ def _hash_row(data):
 
 def _read_raw(content, filename):
     fname = (filename or '').lower()
+
     if fname.endswith('.csv'):
         for enc in ['utf-8-sig','latin-1','utf-8','cp1252']:
             try:
@@ -96,16 +97,49 @@ def _read_raw(content, filename):
                 return df.values.tolist()
             except: continue
         raise ValueError("Não foi possível ler o CSV.")
+
+    # XLSX — tenta direto com openpyxl
+    if fname.endswith('.xlsx'):
+        try:
+            from openpyxl import load_workbook
+            wb = load_workbook(io.BytesIO(content), read_only=True, data_only=True)
+            ws = wb.active
+            return [list(row) for row in ws.iter_rows(values_only=True)]
+        except Exception as e:
+            raise ValueError(f"Erro ao ler xlsx: {e}")
+
+    # XLS — converte para xlsx via libreoffice (arquivo temporário)
+    if fname.endswith('.xls') or fname.endswith('.xlsm'):
+        import tempfile, subprocess, os
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Salva .xls temporário
+            xls_path = os.path.join(tmpdir, 'input.xls')
+            with open(xls_path, 'wb') as f:
+                f.write(content)
+            # Converte via libreoffice
+            result = subprocess.run(
+                ['libreoffice', '--headless', '--convert-to', 'xlsx',
+                 '--outdir', tmpdir, xls_path],
+                capture_output=True, text=True, timeout=60
+            )
+            xlsx_files = [f for f in os.listdir(tmpdir) if f.endswith('.xlsx')]
+            if not xlsx_files:
+                raise ValueError(
+                    f"Não foi possível converter o arquivo .xls. "
+                    f"Erro: {result.stderr[:200]}"
+                )
+            xlsx_path = os.path.join(tmpdir, xlsx_files[0])
+            from openpyxl import load_workbook
+            wb = load_workbook(xlsx_path, read_only=True, data_only=True)
+            ws = wb.active
+            return [list(row) for row in ws.iter_rows(values_only=True)]
+
+    # Fallback genérico
     try:
         from openpyxl import load_workbook
         wb = load_workbook(io.BytesIO(content), read_only=True, data_only=True)
         ws = wb.active
         return [list(row) for row in ws.iter_rows(values_only=True)]
-    except Exception:
-        pass
-    try:
-        df = pd.read_excel(io.BytesIO(content), engine='xlrd', header=None)
-        return df.values.tolist()
     except Exception as e:
         raise ValueError(f"Formato não suportado: {e}")
 
@@ -218,14 +252,15 @@ async def importar_folha(content, filename, competencia, empresa_id, db):
                 'cpf': parsed['cpf'], 'nome': parsed['nome'],
                 'empresa': empresa_nome or None, 'departamento': parsed['departamento'],
                 'cargo': parsed['cargo'], 'filial': empresa_nome or None,
-                'data_admissao': parsed['data_admissao'], 'situacao': 'Ativo',
-                'tipo_contrato': 'CLT', 'salario_base': parsed['salario_base'],
+                'data_admissao': parsed['data_admissao'],
+                'situacao': 'Ativo', 'tipo_contrato': 'CLT',
+                'salario_base': parsed['salario_base'],
                 'total_proventos': parsed['salario_bruto'], 'liquido': parsed['liquido'],
                 'total_descontos': round(max(0, parsed['salario_bruto'] - parsed['liquido']), 2),
                 'valor': parsed['salario_base'],
                 'verba_codigo': None, 'verba_nome': None, 'verba_tipo': None,
                 'referencia': None, 'fgts': None, 'inss': None, 'irrf': None,
-                'pis': None, 'funcao': None, 'centro_custo': None,
+                'centro_custo': None,
             }
             data['dados_hash'] = _hash_row(data)
             mat = data['matricula']
