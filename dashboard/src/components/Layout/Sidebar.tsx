@@ -31,8 +31,8 @@ const GROUPS: {
       { id: 'movimentacao', label: 'Movimentação', icon: <Package size={13} /> },
     ],
   },
+  { id: 'financeiro', label: 'Financeiro',   icon: <Database size={15} />,  color: '#cc0000', available: true  },
   { id: 'marketing',  label: 'Marketing',    icon: <BarChart2 size={15} />, color: '#ec4899', available: false },
-  { id: 'financeiro', label: 'Financeiro',   icon: <Database size={15} />,  color: '#f59e0b', available: false },
   { id: 'rh',         label: 'RH & Pessoas', icon: <Users size={15} />,     color: '#06b6d4', available: false },
 ]
 
@@ -49,6 +49,7 @@ export function Sidebar() {
     setActiveSection(group.id)
     if (group.id === 'tecnologia') setTechExpanded(!techExpanded)
     if (group.id === 'compras') setTechExpanded(!techExpanded)
+    if (group.id === 'financeiro') setTechExpanded(!techExpanded)
   }
 
   const handleSubClick = (sub: string, parentSection: string = 'tecnologia') => {

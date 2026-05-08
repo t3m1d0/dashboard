@@ -53,7 +53,7 @@ export interface DashboardData {
 }
 
 // ── Navigation ────────────────────────────────────────────────
-export type Section = 'tecnologia' | 'compras' | 'marketing' | 'financeiro' | 'rh'
+export type Section = 'tecnologia' | 'compras' | 'financeiro' | 'marketing' | 'rh'
 export type TechSubSection = 'overview'|'sustentacao'|'desenvolvimento'|'entregas'|'estrategica'|'roadmap'
 export type DevSubSection  = 'dashboard'|'tarefas'|'equipe'|'config'
 
