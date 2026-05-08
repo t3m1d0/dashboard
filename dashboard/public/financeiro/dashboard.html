@@ -7001,5 +7001,68 @@ if(typeof globalThis !== 'undefined'){
   </div>
 </div>
 
+
+<script>
+// ── Muniz System Integration ──────────────────────────────────
+window.addEventListener('message', function(e) {
+  if (!e.data || !e.data.type) return;
+
+  if (e.data.type === 'MUNIZ_INIT') {
+    // Configure ERP to use our API
+    if (typeof ERP_CONFIG !== 'undefined') {
+      ERP_CONFIG.enabled = true;
+      ERP_CONFIG.baseUrl = e.data.apiBase || '/api';
+      ERP_CONFIG.authMethod = 'bearer';
+    }
+    // Store token for fetch calls
+    window._munizToken = e.data.token;
+    // Patch fetch to always include auth header
+    const origFetch = window.fetch;
+    window.fetch = function(url, opts) {
+      if (typeof url === 'string' && url.includes('/api/')) {
+        opts = opts || {};
+        opts.headers = opts.headers || {};
+        if (window._munizToken) {
+          opts.headers['Authorization'] = 'Bearer ' + window._munizToken;
+        }
+      }
+      return origFetch(url, opts);
+    };
+    // Hide the tree sidebar — navigation is in the parent system
+    var sidebar = document.querySelector('.tree-sb');
+    if (sidebar) sidebar.style.display = 'none';
+    // Expand main area
+    var mainArea = document.querySelector('.main-area');
+    if (mainArea) mainArea.style.flex = '1';
+    // Remove top nav tabs (they're now in parent sidebar)
+    var dashNav = document.getElementById('dash-nav');
+    if (dashNav) dashNav.style.display = 'none';
+    // Show content immediately
+    var content = document.getElementById('content');
+    var emptyState = content && content.querySelector('.empty-state');
+    if (emptyState) emptyState.style.display = 'none';
+  }
+
+  if (e.data.type === 'MUNIZ_NAV') {
+    // Navigate to the requested page
+    var page = e.data.page;
+    if (typeof navPage === 'function') {
+      navPage(page, null);
+      // Show dash-nav content area
+      var dashNav = document.getElementById('dash-nav');
+      if (dashNav) dashNav.style.display = 'none'; // keep hidden, nav is in parent
+    }
+  }
+});
+
+// On load: hide sidebar immediately
+document.addEventListener('DOMContentLoaded', function() {
+  var sidebar = document.querySelector('.tree-sb');
+  if (sidebar) sidebar.style.display = 'none';
+  var dashNav = document.getElementById('dash-nav');
+  if (dashNav) dashNav.style.display = 'none';
+});
+</script>
+
 </body>
 </html>

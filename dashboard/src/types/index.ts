@@ -67,6 +67,7 @@ export interface PeriodoFiltro {
 }
 
 export type ComprasSubSection = 'movimentacao'
+export type FinanceiroSubSection = 'overview' | 'dre' | 'cashflow' | 'balancete' | 'pdca' | 'kpis' | 'alertas' | 'recpag' | 'upload'
 export type PeriodosPorSecao = Record<TechSubSection, PeriodoFiltro>
 
 // ── Redmine Types ─────────────────────────────────────────────

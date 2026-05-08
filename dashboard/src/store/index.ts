@@ -33,6 +33,8 @@ interface DashboardStore {
   setTechExpanded: (v: boolean) => void
   comprasSubSection: string
   setComprasSubSection: (sub: string) => void
+  financeiroSubSection: string
+  setFinanceiroSubSection: (sub: string) => void
   periodos: PeriodosPorSecao
   setPeriodoSecao: (secao: TechSubSection, p: PeriodoFiltro) => void
   isDark: boolean
@@ -63,6 +65,8 @@ export const useDashboardStore = create<DashboardStore>()(
       setTechExpanded: (techExpanded) => set({ techExpanded }),
       comprasSubSection: 'movimentacao',
       setComprasSubSection: (comprasSubSection) => set({ comprasSubSection }),
+      financeiroSubSection: 'overview',
+      setFinanceiroSubSection: (financeiroSubSection) => set({ financeiroSubSection }),
       periodos: PERIODOS_INICIAIS,
       setPeriodoSecao: (secao, p) =>
         set((state) => ({ periodos: { ...state.periodos, [secao]: p } })),

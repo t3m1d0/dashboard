@@ -6,7 +6,7 @@ import type { Section, TechSubSection } from '@/types'
 import {
   LayoutDashboard, Headphones, Code2, PackageCheck,
   TrendingUp, Map, ChevronDown, BarChart2, Database,
-  Users, Cpu, LogOut, ShoppingCart, Package
+  Users, Cpu, LogOut, ShoppingCart, Package, List, Zap, Coins, Upload
 } from 'lucide-react'
 import { TokenStore } from '@/services/api'
 
@@ -31,7 +31,18 @@ const GROUPS: {
       { id: 'movimentacao', label: 'Movimentação', icon: <Package size={13} /> },
     ],
   },
-  { id: 'financeiro', label: 'Financeiro',   icon: <Database size={15} />,  color: '#cc0000', available: true  },
+  {
+    id: 'financeiro', label: 'Financeiro', icon: <Database size={15} />, color: '#cc0000', available: true,
+    subs: [
+      { id: 'overview',  label: 'Visão Geral',     icon: <LayoutDashboard size={13} /> },
+      { id: 'dre',       label: 'DRE',              icon: <List size={13} /> },
+      { id: 'cashflow',  label: 'Fluxo de Caixa',  icon: <TrendingUp size={13} /> },
+      { id: 'balancete', label: 'Balancete',        icon: <BarChart2 size={13} /> },
+      { id: 'pdca',      label: 'PDCA',             icon: <Zap size={13} /> },
+      { id: 'recpag',    label: 'A Receber / Pagar', icon: <Coins size={13} /> },
+      { id: 'upload',    label: 'Upload',           icon: <Upload size={13} /> },
+    ],
+  },
   { id: 'marketing',  label: 'Marketing',    icon: <BarChart2 size={15} />, color: '#ec4899', available: false },
   { id: 'rh',         label: 'RH & Pessoas', icon: <Users size={15} />,     color: '#06b6d4', available: false },
 ]
@@ -55,6 +66,7 @@ export function Sidebar() {
   const handleSubClick = (sub: string, parentSection: string = 'tecnologia') => {
     setActiveSection(parentSection as any)
     if (parentSection === 'tecnologia') setTechSubSection(sub as TechSubSection)
+    if (parentSection === 'financeiro') useDashboardStore.getState().setFinanceiroSubSection(sub)
     if (window.innerWidth <= 900) useDashboardStore.getState().setSidebarOpen(false)
   }
 
@@ -93,7 +105,7 @@ export function Sidebar() {
       <nav className="flex-1 overflow-y-auto py-3">
         {GROUPS.map(group => {
           const isActive   = activeSection === group.id
-          const isExpanded = isActive && group.subs && techExpanded && (group.id === 'tecnologia' || group.id === 'compras')
+          const isExpanded = isActive && group.subs && techExpanded && (group.id === 'tecnologia' || group.id === 'compras' || group.id === 'financeiro')
 
           return (
             <div key={group.id}>
