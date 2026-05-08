@@ -16,7 +16,7 @@ import {
 } from 'recharts'
 
 // ── Formatadores ──────────────────────────────────────────────
-const fmtBRL  = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0, maximumFractionDigits: 0 })
+const fmtBRL  = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2, maximumFractionDigits: 2 })
 const fmtNum  = (v: number) => Math.round(v).toLocaleString('pt-BR')
 const fmtDec  = (v: number) => v.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 1 })
 
