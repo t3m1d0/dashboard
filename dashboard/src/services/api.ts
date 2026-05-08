@@ -214,3 +214,34 @@ export const SustentacaoAPI = {
     })
   },
 }
+
+// ── Compras — Movimentação de Produtos ───────────────────────
+export const ComprasAPI = {
+  getStats: (params?: Record<string, string>) => {
+    const q = params && Object.keys(params).length > 0
+      ? '?' + new URLSearchParams(params).toString() : ''
+    return request<any>(`/compras/movimentacao/stats${q}`)
+  },
+  getItens: (params?: Record<string, string | number>) => {
+    const q = params && Object.keys(params).length > 0
+      ? '?' + new URLSearchParams(params as any).toString() : ''
+    return request<any>(`/compras/movimentacao/itens${q}`)
+  },
+  getPeriodos: () => request<any[]>('/compras/movimentacao/periodos'),
+  importar: (file: File, periodo: string) => {
+    const form = new FormData()
+    form.append('file', file)
+    form.append('periodo', periodo)
+    const token = TokenStore.get()
+    return fetch(`${BASE_URL}/compras/movimentacao/import`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: form,
+    }).then(async (r) => {
+      if (r.status === 401) { TokenStore.clear(); window.dispatchEvent(new CustomEvent('auth:expired')); throw new Error('Sessão expirada') }
+      const data = await r.json()
+      if (!r.ok) throw new Error(data.detail || `Erro ${r.status}`)
+      return data
+    })
+  },
+}

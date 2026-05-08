@@ -53,7 +53,7 @@ export interface DashboardData {
 }
 
 // ── Navigation ────────────────────────────────────────────────
-export type Section = 'tecnologia' | 'marketing' | 'financeiro' | 'rh'
+export type Section = 'tecnologia' | 'compras' | 'marketing' | 'financeiro' | 'rh'
 export type TechSubSection = 'overview'|'sustentacao'|'desenvolvimento'|'entregas'|'estrategica'|'roadmap'
 export type DevSubSection  = 'dashboard'|'tarefas'|'equipe'|'config'
 
@@ -66,6 +66,7 @@ export interface PeriodoFiltro {
   modo: 'mes' | 'range' | 'todos'
 }
 
+export type ComprasSubSection = 'movimentacao'
 export type PeriodosPorSecao = Record<TechSubSection, PeriodoFiltro>
 
 // ── Redmine Types ─────────────────────────────────────────────

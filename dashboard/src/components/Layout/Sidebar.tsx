@@ -6,13 +6,13 @@ import type { Section, TechSubSection } from '@/types'
 import {
   LayoutDashboard, Headphones, Code2, PackageCheck,
   TrendingUp, Map, ChevronDown, BarChart2, Database,
-  Users, Cpu, LogOut
+  Users, Cpu, LogOut, ShoppingCart, Package
 } from 'lucide-react'
 import { TokenStore } from '@/services/api'
 
 const GROUPS: {
   id: Section; label: string; icon: React.ReactNode; color: string; available: boolean
-  subs?: { id: TechSubSection; label: string; icon: React.ReactNode }[]
+  subs?: { id: string; label: string; icon: React.ReactNode }[]
 }[] = [
   {
     id: 'tecnologia', label: 'Tecnologia', icon: <Cpu size={15} />, color: '#8b5cf6', available: true,
@@ -23,6 +23,12 @@ const GROUPS: {
       { id: 'entregas',        label: 'Entregas',         icon: <PackageCheck size={13} /> },
       { id: 'estrategica',     label: 'Visão Estratégica',icon: <TrendingUp size={13} /> },
       { id: 'roadmap',         label: 'Roadmap',          icon: <Map size={13} /> },
+    ],
+  },
+  {
+    id: 'compras', label: 'Compras', icon: <ShoppingCart size={15} />, color: '#f59e0b', available: true,
+    subs: [
+      { id: 'movimentacao', label: 'Movimentação', icon: <Package size={13} /> },
     ],
   },
   { id: 'marketing',  label: 'Marketing',    icon: <BarChart2 size={15} />, color: '#ec4899', available: false },
@@ -42,11 +48,12 @@ export function Sidebar() {
     if (!group.available) return
     setActiveSection(group.id)
     if (group.id === 'tecnologia') setTechExpanded(!techExpanded)
+    if (group.id === 'compras') setTechExpanded(!techExpanded)
   }
 
-  const handleSubClick = (sub: TechSubSection) => {
-    setActiveSection('tecnologia')
-    setTechSubSection(sub)
+  const handleSubClick = (sub: string, parentSection: string = 'tecnologia') => {
+    setActiveSection(parentSection as any)
+    if (parentSection === 'tecnologia') setTechSubSection(sub as TechSubSection)
     if (window.innerWidth <= 900) useDashboardStore.getState().setSidebarOpen(false)
   }
 
@@ -85,7 +92,7 @@ export function Sidebar() {
       <nav className="flex-1 overflow-y-auto py-3">
         {GROUPS.map(group => {
           const isActive   = activeSection === group.id
-          const isExpanded = isActive && group.subs && techExpanded
+          const isExpanded = isActive && group.subs && techExpanded && (group.id === 'tecnologia' || group.id === 'compras')
 
           return (
             <div key={group.id}>
@@ -122,7 +129,7 @@ export function Sidebar() {
                     return (
                       <button
                         key={sub.id}
-                        onClick={() => handleSubClick(sub.id)}
+                        onClick={() => handleSubClick(sub.id, group.id)}
                         style={{
                           ...navItemBase, padding: '7px 14px', fontSize: '0.79rem',
                           color:      subActive ? '#fff' : 'rgba(255,255,255,0.45)',

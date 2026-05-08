@@ -23,9 +23,11 @@ export function Topbar({}: TopbarProps) {
     isDark, toggleTheme, toggleSidebar,
   } = useDashboardStore()
 
-  const [title, subtitle] = activeSection === 'tecnologia'
-    ? SUB_TITLES[techSubSection]
-    : ['Em Breve', 'Módulo em desenvolvimento']
+  const [title, subtitle] = (() => {
+    if (activeSection === 'tecnologia') return SUB_TITLES[techSubSection]
+    if (activeSection === 'compras')    return ['Movimentação', 'Compras e estoque por filial']
+    return ['Em Breve', 'Módulo em desenvolvimento']
+  })()
 
 
   const btnStyle: React.CSSProperties = {
@@ -61,6 +63,12 @@ export function Topbar({}: TopbarProps) {
           {activeSection === 'tecnologia' && (
             <>
               <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Tecnologia</span>
+              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>/</span>
+            </>
+          )}
+          {activeSection === 'compras' && (
+            <>
+              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Compras</span>
               <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>/</span>
             </>
           )}
