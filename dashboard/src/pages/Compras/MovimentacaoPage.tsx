@@ -385,10 +385,14 @@ export function MovimentacaoPage() {
     setLoading(true)
     try {
       const params: Record<string, string> = {}
-      if (grupoSel)                 params.grupo     = grupoSel
-      if (filialSels.length > 0)    params['filiais'] = filialSels.join('||')
-      if (filtroView !== 'todos')   params.categoria = filtroView
-      const data = await ComprasAPI.getStats(Object.keys(params).length > 0 ? params : undefined)
+      // Filtro de período
+      if (mesSel > 0) params.mes = String(mesSel)
+      params.ano = String(anoSel)
+      // Filtros complementares
+      if (grupoSel)               params.grupo     = grupoSel
+      if (filialSels.length > 0)  params['filiais'] = filialSels.join('||')
+      if (filtroView !== 'todos') params.categoria = filtroView
+      const data = await ComprasAPI.getStats(params)
       setStats(data)
     } catch { setStats(null) }
     finally { setLoading(false) }
