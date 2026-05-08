@@ -373,10 +373,10 @@ export function GentePage() {
               {stats.filtros.departamentos.map((d: string) => <option key={d} value={d}>{d}</option>)}
             </select>
           )}
-          {stats?.filtros?.filiais?.length > 0 && (
+          {stats?.filtros?.empresas?.length > 1 && (
             <select style={SEL_STYLE} value={filialSel} onChange={e => { setFilialSel(e.target.value); setPageNum(1) }}>
-              <option value="">Todas as filiais</option>
-              {stats.filtros.filiais.map((f: string) => <option key={f} value={f}>{f}</option>)}
+              <option value="">Todas as empresas</option>
+              {stats.filtros.empresas.map((f: string) => <option key={f} value={f}>{f}</option>)}
             </select>
           )}
           {stats?.filtros?.cargos?.length > 0 && (
@@ -416,7 +416,7 @@ function OverviewView({ stats, competencias }: { stats: any; competencias: any[]
           { label: 'Colaboradores',   value: fmtNum(k.total_colaboradores), color: '#06b6d4', icon: <Users size={16} /> },
           { label: 'Massa Salarial',  value: fmtBRL(k.massa_salarial),       color: '#3b82f6', icon: <DollarSign size={16} /> },
           { label: 'Total Líquido',   value: fmtBRL(k.total_liquido),        color: '#10b981', icon: <TrendingUp size={16} /> },
-          { label: 'Média Salarial',  value: fmtBRL(k.media_salario),        color: '#8b5cf6', icon: <BarChart3 size={16} /> },
+          { label: 'Média Líquida',   value: fmtBRL(k.media_liquido || 0),   color: '#8b5cf6', icon: <BarChart3 size={16} /> },
         ].map(item => (
           <div key={item.label} className="rounded-2xl p-4 relative overflow-hidden" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
             <div className="absolute top-0 left-0 right-0 rounded-t-2xl" style={{ height: 3, background: item.color }} />
@@ -429,12 +429,25 @@ function OverviewView({ stats, competencias }: { stats: any; competencias: any[]
         ))}
       </div>
 
-      {/* Encargos */}
+      {/* Bruto vs Descontos */}
+      <div className="grid grid-cols-2 gap-3 mb-5">
+        {[
+          { label: 'Total Bruto',     value: fmtBRL(k.total_bruto || 0),    color: '#f59e0b' },
+          { label: 'Total Descontos', value: fmtBRL(k.total_descontos || 0), color: '#ef4444' },
+        ].map(item => (
+          <div key={item.label} className="rounded-2xl p-3.5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+            <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginBottom: 4 }}>{item.label}</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '1.2rem', fontWeight: 700, color: item.color }}>{item.value}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Placeholder encargos */}
       <div className="grid grid-cols-3 gap-3 mb-5">
         {[
-          { label: 'FGTS',  value: fmtBRL(k.total_fgts), color: '#f59e0b' },
-          { label: 'INSS',  value: fmtBRL(k.total_inss), color: '#ef4444' },
-          { label: 'IRRF',  value: fmtBRL(k.total_irrf), color: '#ec4899' },
+          { label: 'FGTS',  value: k.total_fgts ? fmtBRL(k.total_fgts) : '—', color: '#f59e0b' },
+          { label: 'INSS',  value: k.total_inss ? fmtBRL(k.total_inss) : '—', color: '#ef4444' },
+          { label: 'IRRF',  value: k.total_irrf ? fmtBRL(k.total_irrf) : '—', color: '#ec4899' },
         ].map(item => (
           <div key={item.label} className="rounded-2xl p-3.5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
             <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginBottom: 4 }}>{item.label}</div>
@@ -560,7 +573,7 @@ function FolhaView({ itens, page, setPage, busca, setBusca }: any) {
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr>
-                  {['Matrícula','Colaborador','Departamento','Cargo','Filial','Sal. Base','Proventos','Descontos','Líquido','FGTS'].map(h => (
+                  {['Matrícula','Colaborador','Departamento','Cargo','Admissão','Sal. Base','Sal. Bruto','Descontos','Líquido'].map(h => (
                     <th key={h} style={{ padding: '8px 12px', textAlign: 'left', fontSize: '0.62rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', borderBottom: '1px solid var(--border)', fontWeight: 600, background: 'var(--bg-elevated)', whiteSpace: 'nowrap' }}>{h}</th>
                   ))}
                 </tr>
