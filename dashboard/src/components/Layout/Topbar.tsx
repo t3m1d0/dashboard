@@ -27,6 +27,7 @@ export function Topbar({}: TopbarProps) {
     if (activeSection === 'tecnologia') return SUB_TITLES[techSubSection]
     if (activeSection === 'compras')    return ['Movimentação', 'Compras e estoque por filial']
     if (activeSection === 'financeiro') return ['Dashboard Financeiro', 'DRE · Fluxo de Caixa · Balancete · PDCA']
+    if (activeSection === 'gente')      return ['Gente e Gestão', 'Folha · Colaboradores · Férias · Indicadores RH']
     return ['Em Breve', 'Módulo em desenvolvimento']
   })()
 
@@ -70,6 +71,12 @@ export function Topbar({}: TopbarProps) {
           {activeSection === 'financeiro' && (
             <>
               <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Financeiro</span>
+              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>/</span>
+            </>
+          )}
+          {activeSection === 'gente' && (
+            <>
+              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Gente e Gestão</span>
               <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>/</span>
             </>
           )}

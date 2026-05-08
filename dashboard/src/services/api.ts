@@ -246,3 +246,42 @@ export const ComprasAPI = {
     })
   },
 }
+
+// ── Gente e Gestão ───────────────────────────────────────────
+export const GenteAPI = {
+  getStats: (params?: Record<string, string>) => {
+    const q = params && Object.keys(params).length > 0
+      ? '?' + new URLSearchParams(params).toString() : ''
+    return request<any>(`/gente/folha/stats${q}`)
+  },
+  getItens: (params?: Record<string, string | number>) => {
+    const q = params && Object.keys(params).length > 0
+      ? '?' + new URLSearchParams(params as any).toString() : ''
+    return request<any>(`/gente/folha/itens${q}`)
+  },
+  getCompetencias: () => request<any[]>('/gente/folha/competencias'),
+  getColaboradores: (params?: Record<string, string | number>) => {
+    const q = params && Object.keys(params).length > 0
+      ? '?' + new URLSearchParams(params as any).toString() : ''
+    return request<any>(`/gente/colaboradores${q}`)
+  },
+  getImportacoes: () => request<any[]>('/gente/importacoes'),
+  deleteCompetencia: (competencia: string) =>
+    request<any>(`/gente/folha/competencia/${encodeURIComponent(competencia)}`, { method: 'DELETE' }),
+  importar: (file: File, competencia?: string) => {
+    const form = new FormData()
+    form.append('file', file)
+    if (competencia) form.append('competencia', competencia)
+    const token = TokenStore.get()
+    return fetch(`${BASE_URL}/gente/folha/import`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: form,
+    }).then(async (r) => {
+      if (r.status === 401) { TokenStore.clear(); window.dispatchEvent(new CustomEvent('auth:expired')); throw new Error('Sessão expirada') }
+      const data = await r.json()
+      if (!r.ok) throw new Error(data.detail || `Erro ${r.status}`)
+      return data
+    })
+  },
+}

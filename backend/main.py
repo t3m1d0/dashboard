@@ -14,6 +14,7 @@ from app.routers import redmine
 from app.routers import sustentacao
 from app.routers import compras
 from app.routers import financeiro
+from app.routers import gente
 
 
 @asynccontextmanager
@@ -53,6 +54,7 @@ app.include_router(redmine.router,     prefix="/api")
 app.include_router(sustentacao.router,  prefix="/api")
 app.include_router(compras.router,       prefix="/api")
 app.include_router(financeiro.router,    prefix="/api")
+app.include_router(gente.router,         prefix="/api")
 
 @app.get("/api/health")
 async def health():
