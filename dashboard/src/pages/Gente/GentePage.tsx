@@ -265,6 +265,9 @@ export function GentePage() {
 
   // ── Sub-sections ─────────────────────────────────────────
   const renderContent = () => {
+    // Conferência de Folha é módulo próprio — renderiza sempre, independente do estado do Gente
+    if (genteSubSection === 'conferencia') return <ConferenciaPage />
+
     if (loading) return (
       <div className="flex items-center justify-center py-24">
         <div style={{ width: 28, height: 28, borderRadius: '50%', border: '2px solid var(--border)', borderTopColor: '#06b6d4', animation: 'spin 0.7s linear infinite' }} />
@@ -290,9 +293,6 @@ export function GentePage() {
         </button>
       </div>
     )
-
-    // Conferência de Folha é renderizada diretamente (módulo próprio)
-    if (genteSubSection === 'conferencia') return <ConferenciaPage />
 
     switch (genteSubSection) {
       case 'overview':
