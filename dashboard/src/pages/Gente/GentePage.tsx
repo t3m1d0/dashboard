@@ -4,6 +4,8 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useDashboardStore } from '@/store'
 import { GenteAPI } from '@/services/api'
+import { ConferenciaPage } from '@/pages/Conferencia/ConferenciaPage'
+
 import {
   Upload, X, CheckCircle2, AlertTriangle, RefreshCw,
   FileSpreadsheet, Users, Trash2, Search, ChevronLeft,
@@ -289,6 +291,9 @@ export function GentePage() {
       </div>
     )
 
+    // Conferência de Folha é renderizada diretamente (módulo próprio)
+    if (genteSubSection === 'conferencia') return <ConferenciaPage />
+
     switch (genteSubSection) {
       case 'overview':
       case 'indicadores':
@@ -308,7 +313,8 @@ export function GentePage() {
 
   const SUB_LABELS: Record<string,string> = {
     overview: 'Visão Geral', folha: 'Folha de Pagamento', colaboradores: 'Colaboradores',
-    ferias: 'Férias / Afastamentos', indicadores: 'Indicadores RH', upload: 'Upload',
+    conferencia: 'Conferência de Folha', ferias: 'Férias / Afastamentos',
+    indicadores: 'Indicadores RH', upload: 'Upload',
   }
 
   return (
