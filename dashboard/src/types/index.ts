@@ -53,7 +53,7 @@ export interface DashboardData {
 }
 
 // ── Navigation ────────────────────────────────────────────────
-export type Section = 'tecnologia' | 'compras' | 'financeiro' | 'gente' | 'conferencia' | 'marketing' | 'rh'
+export type Section = 'tecnologia' | 'compras' | 'financeiro' | 'gente' | 'marketing' | 'rh'
 export type TechSubSection = 'overview'|'sustentacao'|'desenvolvimento'|'entregas'|'estrategica'|'roadmap'
 export type DevSubSection  = 'dashboard'|'tarefas'|'equipe'|'config'
 
@@ -107,6 +107,6 @@ export interface RedmineFiltros {
   versoes: string[]; trackers: string[]
 }
 
-export type GenteSubSection = 'overview' | 'folha' | 'colaboradores' | 'ferias' | 'indicadores' | 'upload'
+export type GenteSubSection = 'overview' | 'folha' | 'colaboradores' | 'conferencia' | 'ferias' | 'indicadores' | 'upload'
 
 export type ConferenciaSubSection = 'overview' | 'filiais' | 'colaboradores' | 'upload'
