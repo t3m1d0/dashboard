@@ -329,14 +329,16 @@ export function GentePage() {
             {hasData ? `${stats.kpis.total_colaboradores} colaboradores · ${competenciaSel || 'todos os períodos'}` : 'Nenhum dado importado'}
           </p>
         </div>
-        <button onClick={() => setImportOpen(true)} className="flex items-center gap-2 px-3.5 py-2 rounded-xl"
-          style={{ background: 'linear-gradient(135deg, #06b6d4, #3b82f6)', color: '#fff', border: 'none', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-body)' }}>
-          <Upload size={14} /> Importar Folha
-        </button>
+        {genteSubSection !== 'conferencia' && (
+          <button onClick={() => setImportOpen(true)} className="flex items-center gap-2 px-3.5 py-2 rounded-xl"
+            style={{ background: 'linear-gradient(135deg, #06b6d4, #3b82f6)', color: '#fff', border: 'none', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-body)' }}>
+            <Upload size={14} /> Importar Folha
+          </button>
+        )}
       </div>
 
-      {/* Filtro por mês */}
-      {competencias.length > 0 && (
+      {/* Filtro por mês — oculto na conferência */}
+      {competencias.length > 0 && genteSubSection !== 'conferencia' && (
         <div className="mb-4">
           <div style={{ fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-muted)', marginBottom: 10 }}>
             Competência — {anoSel}
@@ -371,7 +373,7 @@ export function GentePage() {
       )}
 
       {/* Filtros secundários */}
-      {hasData && (
+      {hasData && genteSubSection !== 'conferencia' && (
         <div className="flex gap-2 mb-5 flex-wrap">
           {(stats?.filtros?.departamentos?.length || 0) > 0 && (
             <select style={SEL_STYLE} value={deptoSel} onChange={e => { setDeptoSel(e.target.value); setPageNum(1) }}>
@@ -403,7 +405,7 @@ export function GentePage() {
       {/* Content */}
       {renderContent()}
 
-      {importOpen && <ImportModal onClose={() => setImportOpen(false)} onSuccess={() => { loadCompetencias(); loadStats() }} />}
+      {importOpen && genteSubSection !== 'conferencia' && <ImportModal onClose={() => setImportOpen(false)} onSuccess={() => { loadCompetencias(); loadStats() }} />}
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   )
