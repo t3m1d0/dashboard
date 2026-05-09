@@ -1,10 +1,21 @@
 # ============================================================
 # app/services/conferencia_folha_import.py
-# Parser do PDF "Conferência de Folha" da Muniz Auto Center
+# Parser do PDF "Conferência de Folha" — Muniz Auto Center
+#
+# Formato do arquivo: Fechamento_MES.pdf
+# Extração: pdftotext -raw (uma linha por colaborador)
+#
+# Estrutura dos dados por colaborador (linha RAW):
+#   NOME  DD/MM/YYYY  CARGO  Sim|Não  LIQ%  LIQ_VAL  PREM  BONUS
+#   VLR_PAGO  SAL_FAM  AJ_CUSTO  H_EX  QB_CAIXA  PER  OUT_CRED
+#   TOT_PROV  INSS  IRRF  VT  FALT  DESC_DIV  H_FALT  VF  VF_OS
+#   OUTROS  TOT_DEB  TOT_DESC  LIQUIDO  PIX
+#
+# O SALÁRIO vem na linha ANTERIOR à linha do colaborador.
 # ============================================================
 import hashlib, uuid, re, subprocess, os, tempfile
 from datetime import datetime, timezone
-from typing import Optional, List
+from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, func, delete as sa_delete
 
@@ -23,13 +34,35 @@ MESES_NOME = {
     1:'Janeiro',2:'Fevereiro',3:'Março',4:'Abril',5:'Maio',6:'Junho',
     7:'Julho',8:'Agosto',9:'Setembro',10:'Outubro',11:'Novembro',12:'Dezembro'
 }
+_NUM_RE  = re.compile(r'-?[\d]+(?:\.[\d]+)*,[\d]{2}')
+_DATE_RE = re.compile(r'\d{2}/\d{2}/\d{4}')
 
 
-def _parse_brl(val: str) -> float:
-    """R$ 1.234,56  →  1234.56"""
+def _extrair_mes_arquivo(filename: str) -> tuple:
+    """
+    Extrai mês do nome do arquivo.
+    Formato esperado: Fechamento_MES.pdf
+    Ex: Fechamento_Abril.pdf → (4, 'Abril', '2026-04')
+    """
+    nome = (filename or '').lower()
+    for ext in ['.pdf', '.PDF']: nome = nome.replace(ext, '')
+    partes = re.split(r'[_\-\s]', nome)
+    for parte in reversed(partes):
+        if parte in MESES_MAP:
+            num = MESES_MAP[parte]
+            ano = datetime.now().year
+            return num, MESES_NOME[num], f'{ano}-{num:02d}'
+    for mes_nome, num in MESES_MAP.items():
+        if mes_nome in nome:
+            ano = datetime.now().year
+            return num, MESES_NOME[num], f'{ano}-{num:02d}'
+    return None, None, None
+
+
+def _parse_brl(val) -> float:
     if not val: return 0.0
     s = str(val).strip().replace('R$','').replace('\xa0','').replace(' ','')
-    if not s or s in ('-','—','',): return 0.0
+    if not s or s in ('-','—',''): return 0.0
     if ',' in s and '.' in s:
         return float(s.replace('.','').replace(',','.'))
     if ',' in s:
@@ -38,14 +71,14 @@ def _parse_brl(val: str) -> float:
     except: return 0.0
 
 
-def _extract_text(pdf_bytes: bytes) -> str:
-    """Extrai texto do PDF com layout preservado via pdftotext."""
+def _extract_text_raw(pdf_bytes: bytes) -> str:
+    """Extrai texto via pdftotext -raw (uma linha por parágrafo)."""
     with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as f:
         f.write(pdf_bytes)
         tmp = f.name
     try:
         result = subprocess.run(
-            ['pdftotext', '-layout', tmp, '-'],
+            ['pdftotext', '-raw', tmp, '-'],
             capture_output=True, text=True, timeout=30
         )
         if result.returncode != 0:
@@ -55,114 +88,113 @@ def _extract_text(pdf_bytes: bytes) -> str:
         os.unlink(tmp)
 
 
-def _parse_pdf(text: str) -> dict:
-    """
-    Parseia o texto extraído do PDF de Conferência de Folha.
-    Retorna dict com filial, competencia, linhas e totais.
-    """
-    lines = text.split('\n')
+def _parse_pdf(text: str, filename: str) -> dict:
+    lines = [l.strip() for l in text.split('\n')]
+    non_empty = [(i, l) for i, l in enumerate(lines) if l]
 
-    # ── Extrair cabeçalho ────────────────────────────────
+    # ── Cabeçalho ────────────────────────────────────────
     filial_nome = ''
     filial_cnpj = ''
-    mes_num = None
-    ano     = None
+    mes_num = ano = None
 
-    for line in lines[:15]:
-        stripped = line.strip()
-        if not stripped: continue
-
-        # Nome da filial (primeira linha não vazia)
-        if not filial_nome and len(stripped) > 5 and 'CNPJ' not in stripped:
-            filial_nome = stripped
+    for i, line in non_empty[:15]:
+        # Nome da filial (primeira linha)
+        if not filial_nome and len(line) > 3 and 'CNPJ' not in line and 'Tel:' not in line:
+            filial_nome = line
 
         # CNPJ
-        cnpj_m = re.search(r'\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2}', stripped)
-        if cnpj_m:
-            filial_cnpj = cnpj_m.group(0)
+        m = re.search(r'\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2}', line)
+        if m: filial_cnpj = m.group(0)
 
-        # Mês/Ano: "Mês: Abril Ano: 2026" ou "Competência: 04/2026"
-        mes_m = re.search(r'M[êe]s[:\s]+(\w+)\s+Ano[:\s]+(\d{4})', stripped, re.IGNORECASE)
-        if mes_m:
-            mes_str = mes_m.group(1).lower().strip()
-            if mes_str in MESES_MAP:
-                mes_num = MESES_MAP[mes_str]
-                ano     = int(mes_m.group(2))
+        # Mês/Ano: "Mês: Abril Ano: 2026"
+        m = re.search(r'M[êe]s[:\s]+(\w+)\s+Ano[:\s]+(\d{4})', line, re.IGNORECASE)
+        if m:
+            ms = m.group(1).lower().strip()
+            if ms in MESES_MAP:
+                mes_num = MESES_MAP[ms]
+                ano     = int(m.group(2))
 
-        # Alternativa: "Competência: 04/2026"
-        comp_m = re.search(r'Compet[êe]ncia[:\s]+(\d{1,2})/(\d{4})', stripped, re.IGNORECASE)
-        if comp_m:
-            mes_num = int(comp_m.group(1))
-            ano     = int(comp_m.group(2))
+    # Fallback: extrair do nome do arquivo
+    if not mes_num:
+        mes_num_f, mes_nome_f, comp_f = _extrair_mes_arquivo(filename)
+        if mes_num_f:
+            mes_num = mes_num_f
+            ano     = int(comp_f.split('-')[0]) if comp_f else datetime.now().year
 
     if not mes_num:
-        # Tenta extrair do nome do arquivo (não disponível aqui — fallback)
-        ano = datetime.now().year
-        mes_num = datetime.now().month
+        raise ValueError(
+            "Não foi possível detectar o mês. "
+            "Use o formato Fechamento_MES.pdf (ex: Fechamento_Abril.pdf)."
+        )
 
     competencia  = f"{ano}-{mes_num:02d}"
     mes_nome_str = MESES_NOME.get(mes_num, str(mes_num))
 
-    # ── Encontrar linha do header ─────────────────────────
-    header_idx = None
-    for i, line in enumerate(lines):
-        if 'LIQUIDEZ' in line.upper() and 'PREMIA' in line.upper():
-            header_idx = i
-            break
-        if 'TOTAL PROVENTOS' in line.upper():
-            header_idx = i
-            break
-
-    if header_idx is None:
-        raise ValueError("Não foi possível encontrar o cabeçalho das colunas no PDF.")
-
-    # ── Parsear linhas de dados ───────────────────────────
-    # O texto é extraído com layout, então cada colaborador ocupa 1 linha longa
+    # ── Parsear colaboradores ─────────────────────────────
+    # No modo -raw, o salário aparece na linha ANTES do colaborador
     colaboradores = []
-    totais_linha  = None
-    liquidez_loja = None
-    liquidez_pct  = None
+    liquidez_loja = liquidez_pct = None
+    totais_raw    = None
+    salario_proximo = 0.0
 
-    # Encontrar a área de dados: depois do header até os totais
-    data_started = False
-    for i, line in enumerate(lines):
-        if i <= header_idx:
+    for i, line in non_empty:
+        # Pular cabeçalho e headers de coluna
+        if any(kw in line for kw in [
+            'Conferência', 'NOME', 'ADMISSÃO', 'CARGO', 'SOMAR', 'LIQUIDEZ',
+            'PREMIAÇÃO', 'PROVENTOS', 'DESCONTOS', 'Usuário:', 'Página',
+            'VLR A SER', 'SAL.', 'FAMÍLIA', 'CUSTO', 'EXTRA', 'CAIXA',
+            'CRÉDITOS', 'INSS', 'IRRF', 'FALTA', 'DÉBITOS', 'PIX',
+            'Raz. Social', 'CNPJ', 'Tel:', 'End.', 'DT', 'PER.',
+        ]):
             continue
-
-        stripped = line.strip()
-        if not stripped:
-            continue
-
-        # Detectar linha de totais (começa com número grande ou "Usuário:")
-        if stripped.startswith('Usuário:') or stripped.startswith('Data de Emissão:'):
-            break
 
         # Liquidez da loja
-        liq_m = re.search(r'LIQUIDEZ DA LOJA\s+(R\$\s*[\d.,]+)', stripped, re.IGNORECASE)
-        if liq_m:
-            liquidez_loja = _parse_brl(liq_m.group(1))
-            pct_m = re.search(r'(\d+,\d+)\s*%', stripped)
-            if pct_m:
-                liquidez_pct = _parse_brl(pct_m.group(1))
+        if 'LIQUIDEZ DA LOJA' in line:
+            continue
+        if re.match(r'^R\$\s*[\d.,]+$', line):
+            val = _parse_brl(line)
+            if val > 1000:
+                liquidez_loja = val
             continue
 
-        # Linha de total (muitos números consecutivos sem nome)
-        nums_in_line = re.findall(r'[\d.,]+', stripped)
-        if len(nums_in_line) > 10 and not re.match(r'[A-Za-záàâãéèêíïóôõúüçÁÀÂÃÉÊÍÓÔÕÚÜÇ]', stripped):
-            totais_linha = stripped
+        # Percentual de liquidez (ex: "24,00 %")
+        m_pct = re.match(r'^([\d.,]+)\s*%$', line)
+        if m_pct:
+            liquidez_pct = _parse_brl(m_pct.group(1))
             continue
 
-        # Linha de colaborador: começa com nome (letra maiúscula ou minúscula)
-        if re.match(r'^[A-Za-záàâãéèêíïóôõúüçÁÀÂÃÉÊÍÓÔÕÚÜÇ]', stripped):
-            parsed = _parse_colaborador_line(stripped)
+        # Total líquido (ex: "TOTAL LÍQUIDO R$ 35.454,94")
+        if 'TOTAL LÍQUIDO' in line or 'TOTAL LIQUIDO' in line:
+            m = re.search(r'R\$\s*([\d.,]+)', line)
+            if m: liquidez_loja = liquidez_loja or 0  # already set
+            continue
+
+        # Linha de totais (começa com número grande)
+        if re.match(r'^[\d.,]+$', line) and ',' in line:
+            # Pode ser salário da próxima linha ou total
+            val = _parse_brl(line)
+            # Totais têm muitos números na linha seguinte
+            salario_proximo = val
+            continue
+
+        # Linha de totalizador multi-valor
+        nums_in_line = _NUM_RE.findall(line)
+        if len(nums_in_line) > 8 and not _DATE_RE.search(line) and not re.match(r'^[A-Za-z]', line):
+            totais_raw = line
+            continue
+
+        # Linha de colaborador: contém data DD/MM/YYYY
+        if _DATE_RE.search(line):
+            parsed = _parse_colaborador_raw(line, salario_proximo)
             if parsed:
                 colaboradores.append(parsed)
+                salario_proximo = 0.0  # reset
+            continue
 
-    # ── Parsear totalizadores ─────────────────────────────
-    totais = _parse_totais(totais_linha) if totais_linha else {}
+    totais = _parse_totais_raw(totais_raw) if totais_raw else {}
 
     return {
-        'filial_nome':   filial_nome.strip(),
+        'filial_nome':   filial_nome,
         'filial_cnpj':   filial_cnpj,
         'competencia':   competencia,
         'mes_nome':      mes_nome_str,
@@ -174,94 +206,61 @@ def _parse_pdf(text: str) -> dict:
     }
 
 
-# Padrão de data dd/mm/yyyy
-_DATE_RE = re.compile(r'\d{2}/\d{2}/\d{4}')
-# Padrão de valor numérico BRL: 1.234,56 ou 266,67 ou 0,00
-_NUM_RE  = re.compile(r'-?[\d]+(?:\.[\d]+)*,[\d]{2}')
-# PIX/CPF no final da linha
-_PIX_RE  = re.compile(r'[\(\d][\d\.\-\s\(\)]+$')
-
-
-def _parse_colaborador_line(line: str) -> Optional[dict]:
+def _parse_colaborador_raw(line: str, salario: float) -> Optional[dict]:
     """
-    Parseia uma linha de colaborador do PDF.
-    Formato:
-      NOME  DD/MM/YYYY  CARGO  SAL  SIM/NÃO  LIQ%  LIQ_VAL  PREM  BONUS
-      VLR_PAGO  SAL_FAM  AJ_CUSTO  H_EX  QB_CAIXA  PER  OUT_CRED
-      TOT_PROV  INSS  IRRF  VT  FALT  DESC_DIV  H_FALT  VF  VF_OS
-      OUTROS  TOT_DEB  TOT_DESC  LIQUIDO  PIX
+    Parseia linha do colaborador no formato -raw.
+    Ex: "Antonio Carmelo Gonçalves 27/04/2026 Mecanico Não -204,51 0,00 ... 246,67 (43)98492-8753"
     """
-    # Extrair data de admissão
+    # Extrair data
     dates = _DATE_RE.findall(line)
-    if not dates:
-        return None
-    dt_admissao = dates[0]
+    if not dates: return None
+    dt = dates[0]
 
-    # Extrair todos os valores numéricos BRL da linha
-    # Mas primeiro removemos o nome e a data
-    pos_date = line.find(dt_admissao)
-    nome     = line[:pos_date].strip()
-    resto    = line[pos_date + len(dt_admissao):].strip()
+    pos_dt = line.find(dt)
+    nome   = line[:pos_dt].strip()
+    if not nome or len(nome) < 3: return None
 
-    if not nome or len(nome) < 3:
-        return None
+    resto = line[pos_dt + len(dt):].strip()
 
-    # Extrair cargo (texto antes dos números)
-    cargo_m = re.match(r'^([A-Za-záàâãéèêíïóôõúüçÁÀÂÃÉÊÍÓÔÕÚÜÇ\s\-\d]+?)\s{2,}', resto)
-    cargo    = cargo_m.group(1).strip() if cargo_m else ''
-    if cargo_m:
-        resto = resto[cargo_m.end():]
-
-    # Sim/Não
-    somar_sal = None
+    # Extrair cargo (texto antes de Sim/Não)
     sm = re.search(r'\b(Sim|Não|Nao)\b', resto, re.IGNORECASE)
     if sm:
+        cargo     = resto[:sm.start()].strip()
+        resto     = resto[sm.end():].strip()
         somar_sal = sm.group(1)
-        resto = resto[sm.end():].strip()
+    else:
+        # Tenta extrair cargo até o primeiro número
+        m_cargo = re.match(r'^([^\d-]+?)\s+(-?[\d])', resto)
+        cargo     = m_cargo.group(1).strip() if m_cargo else ''
+        somar_sal = None
+        if m_cargo: resto = resto[m_cargo.start(1) + len(m_cargo.group(1)):].strip()
 
-    # Extrair PIX/CPF do final da linha (se houver)
+    # Extrair PIX/CPF do final
     pix_cpf = None
-    pix_m = re.search(r'(\(?\d{2}\)?\s*\d{4,5}[\s\-]\d{4}|\d{3}\.?\d{3}\.?\d{3}[\-\.]?\d{2}|\d{8,11})$', resto.strip())
-    if pix_m:
-        pix_cpf = pix_m.group(0).strip()
-        resto   = resto[:pix_m.start()].strip()
+    m_pix = re.search(
+        r'(\(?\d{2}\)?\s*\d{4,5}[\s\-]\d{4}|\d{3}\.?\d{3}\.?\d{3}[\-\.]?\d{2}|\d{8,11})$',
+        resto.strip()
+    )
+    if m_pix:
+        pix_cpf = m_pix.group(0).strip()
+        resto   = resto[:m_pix.start()].strip()
 
-    # Extrair todos os valores numéricos restantes
-    nums = _NUM_RE.findall(resto)
-    vals = [_parse_brl(n) for n in nums]
+    # Todos os números da linha
+    nums = [_parse_brl(n) for n in _NUM_RE.findall(resto)]
 
-    # Estrutura esperada de valores (posição → campo):
+    def v(idx): return nums[idx] if idx < len(nums) else 0.0
+
+    # Posições esperadas:
     # [0]=liquidez_val [1]=liquidez_pct [2]=premiacao [3]=bonus [4]=vlr_ser_pago
     # [5]=sal_familia [6]=ajuda_custo [7]=horas_extra [8]=quebra_caixa
     # [9]=periculosidade [10]=outros_creditos [11]=total_proventos
     # [12]=inss [13]=irrf [14]=vt [15]=faltas [16]=desc_diversos
-    # [17]=horas_falta [18]=vale_func [19]=vale_func_os [20]=outros_debitos
+    # [17]=horas_falta [18]=vale_func [19]=vale_func_os [20]=outros
     # [21]=total_descontos [22]=liquido
-    # (Salário pode aparecer antes de liquidez_val)
-
-    def v(idx, default=0.0):
-        return vals[idx] if idx < len(vals) else default
-
-    # O salário vem antes da data na linha original — buscar antes
-    sal_m = _NUM_RE.search(line[:pos_date + len(dt_admissao) + len(cargo or '') + 20])
-    salario = 0.0
-    if sal_m:
-        txt_before = line[:pos_date]
-        sal_nums   = _NUM_RE.findall(txt_before + ' ' + (cargo or ''))
-        if not sal_nums:
-            # salario pode ser o primeiro numero depois do cargo
-            pass
-
-    # Remonta tentando identificar o salário do lado do cargo
-    # Salário está na sequência: CARGO  SALARIO  Sim/Não
-    sal_cargo_m = re.search(r'([\d]+(?:\.[\d]+)*,\d{2})\s+(?:Sim|Não|Nao)', line, re.IGNORECASE)
-    if sal_cargo_m:
-        salario = _parse_brl(sal_cargo_m.group(1))
-
     return {
-        'nome':           nome.strip(),
-        'dt_admissao':    dt_admissao,
-        'cargo':          cargo.strip() if cargo else '',
+        'nome':           nome,
+        'dt_admissao':    dt,
+        'cargo':          cargo,
         'salario':        salario,
         'somar_sal':      somar_sal,
         'liquidez_val':   v(0),
@@ -285,26 +284,25 @@ def _parse_colaborador_line(line: str) -> Optional[dict]:
         'vale_func':      v(18),
         'vale_func_os':   v(19),
         'outros_debitos': v(20),
-        'total_descontos':v(21) if len(vals) > 21 else 0.0,
-        'liquido':        v(22) if len(vals) > 22 else (v(11) - v(21) if len(vals) > 21 else 0.0),
+        'total_descontos':v(21) if len(nums) > 21 else 0.0,
+        'liquido':        v(22) if len(nums) > 22 else (v(11) - v(21) if len(nums) > 21 else 0.0),
         'pix_cpf':        pix_cpf,
     }
 
 
-def _parse_totais(line: str) -> dict:
-    nums = _NUM_RE.findall(line)
-    vals = [_parse_brl(n) for n in nums]
-    def v(i): return vals[i] if i < len(vals) else 0.0
+def _parse_totais_raw(line: str) -> dict:
+    nums = [_parse_brl(n) for n in _NUM_RE.findall(line)]
+    def v(i): return nums[i] if i < len(nums) else 0.0
     return {
         'total_salarios':  v(0),
         'total_liquidez':  v(1),
         'total_proventos': v(2),
-        'total_inss':      v(4),
-        'total_irrf':      v(5),
-        'total_vt':        v(6),
-        'total_descontos': v(7) if len(vals) > 10 else 0.0,
-        'total_liquido':   vals[-1] if vals else 0.0,
-        'total_vale_func': v(8) if len(vals) > 8 else 0.0,
+        'total_inss':      v(4) if len(nums) > 4 else 0.0,
+        'total_irrf':      v(5) if len(nums) > 5 else 0.0,
+        'total_vt':        v(6) if len(nums) > 6 else 0.0,
+        'total_descontos': nums[-3] if len(nums) > 3 else 0.0,
+        'total_liquido':   nums[-1] if nums else 0.0,
+        'total_vale_func': v(8) if len(nums) > 8 else 0.0,
     }
 
 
@@ -320,22 +318,20 @@ def _hash_colab(data: dict) -> str:
 async def importar_conferencia(
     pdf_bytes: bytes,
     filename: str,
-    empresa_id: Optional[uuid.UUID],
+    empresa_id,
     db: AsyncSession,
 ) -> dict:
-    """
-    Importa PDF de Conferência de Folha.
-    Upsert por (empresa_id, filial_nome, competencia, nome).
-    """
-    text = _extract_text(pdf_bytes)
-    data = _parse_pdf(text)
+    text = _extract_text_raw(pdf_bytes)
+    data = _parse_pdf(text, filename)
 
     filial_nome  = data['filial_nome']
     competencia  = data['competencia']
     mes_nome_str = data['mes_nome']
-    ano          = data['ano']
 
-    # Buscar existentes
+    if not filial_nome:
+        raise ValueError("Não foi possível identificar a filial no PDF.")
+
+    # Buscar existentes para upsert
     existing_result = await db.execute(
         select(ConferenciaFolhaLinha.nome, ConferenciaFolhaLinha.dados_hash)
         .where(and_(
@@ -359,7 +355,7 @@ async def importar_conferencia(
                 'filial_cnpj':   data['filial_cnpj'],
                 'competencia':   competencia,
                 'mes_nome':      mes_nome_str,
-                'ano':           ano,
+                'ano':           data['ano'],
                 'nome':          c['nome'],
                 'dt_admissao':   c.get('dt_admissao'),
                 'cargo':         c.get('cargo'),
@@ -391,8 +387,8 @@ async def importar_conferencia(
                 'liquido':       c.get('liquido', 0),
             }
             row['dados_hash'] = _hash_colab(row)
-
             nome = row['nome']
+
             if nome in existing:
                 if existing[nome] != row['dados_hash']:
                     res = await db.execute(select(ConferenciaFolhaLinha).where(and_(
@@ -403,21 +399,17 @@ async def importar_conferencia(
                     )))
                     obj = res.scalar_one_or_none()
                     if obj:
-                        for k, v in row.items(): setattr(obj, k, v)
-                        obj.atualizado_em = datetime.now(timezone.utc)
-                        updated += 1
+                        for k, vv in row.items(): setattr(obj, k, vv)
+                        obj.atualizado_em = datetime.now(timezone.utc); updated += 1
                     else:
                         row['id'] = uuid.uuid4()
                         row['importado_em'] = row['atualizado_em'] = datetime.now(timezone.utc)
-                        to_insert.append(row)
-                        inserted += 1
-                else:
-                    skipped += 1
+                        to_insert.append(row); inserted += 1
+                else: skipped += 1
             else:
                 row['id'] = uuid.uuid4()
                 row['importado_em'] = row['atualizado_em'] = datetime.now(timezone.utc)
-                to_insert.append(row)
-                inserted += 1
+                to_insert.append(row); inserted += 1
 
         except Exception as e:
             errors += 1
@@ -426,10 +418,7 @@ async def importar_conferencia(
     if to_insert:
         db.add_all([ConferenciaFolhaLinha(**r) for r in to_insert])
 
-    # Upsert resumo
     await _upsert_resumo(db, empresa_id, filial_nome, data)
-
-    # Registrar importação
     db.add(ConferenciaFolhaImportacao(
         empresa_id=empresa_id, filial_nome=filial_nome,
         competencia=competencia, mes_nome=mes_nome_str,
@@ -437,8 +426,8 @@ async def importar_conferencia(
         inseridos=inserted, atualizados=updated,
         ignorados=skipped, erros=errors,
     ))
-
     await db.flush()
+
     return {
         'filial':        filial_nome,
         'competencia':   competencia,
@@ -448,8 +437,8 @@ async def importar_conferencia(
         'atualizados':   updated,
         'ignorados':     skipped,
         'erros':         errors,
-        'liquidez_loja': data.get('liquidez_loja'),
-        'liquidez_pct':  data.get('liquidez_pct'),
+        'liquidez_loja': data.get('liquidez_loja', 0),
+        'liquidez_pct':  data.get('liquidez_pct', 0),
         'primeiros_erros': erros_msg[:5],
     }
 
@@ -476,23 +465,20 @@ async def _upsert_resumo(db, empresa_id, filial_nome, data):
         'total_descontos':    t.get('total_descontos', 0),
         'total_liquido':      t.get('total_liquido', 0),
         'total_vale_func':    t.get('total_vale_func', 0),
-        'liquidez_loja':      data.get('liquidez_loja'),
-        'liquidez_pct':       data.get('liquidez_pct'),
+        'liquidez_loja':      data.get('liquidez_loja', 0),
+        'liquidez_pct':       data.get('liquidez_pct', 0),
     }
     if obj:
         for k, v in vals.items(): setattr(obj, k, v)
     else:
         db.add(ConferenciaFolhaResumo(
             id=uuid.uuid4(), empresa_id=empresa_id,
-            filial_nome=filial_nome, competencia=data['competencia'],
-            **vals
+            filial_nome=filial_nome, competencia=data['competencia'], **vals
         ))
 
 
-# ── Analytics ─────────────────────────────────────────────────
-
 async def get_stats(db, empresa_id, competencia=None, filial=None):
-    from sqlalchemy import desc, and_
+    from sqlalchemy import desc
 
     filters_r = [ConferenciaFolhaResumo.empresa_id == empresa_id]
     filters_l = [ConferenciaFolhaLinha.empresa_id == empresa_id]
@@ -503,7 +489,6 @@ async def get_stats(db, empresa_id, competencia=None, filial=None):
         filters_r.append(ConferenciaFolhaResumo.filial_nome == filial)
         filters_l.append(ConferenciaFolhaLinha.filial_nome == filial)
 
-    # KPIs agregados dos resumos
     kpi = (await db.execute(select(
         func.sum(ConferenciaFolhaResumo.total_funcionarios).label('total_func'),
         func.sum(ConferenciaFolhaResumo.total_proventos).label('total_prov'),
@@ -516,7 +501,6 @@ async def get_stats(db, empresa_id, competencia=None, filial=None):
         func.sum(ConferenciaFolhaResumo.liquidez_loja).label('liquidez_loja'),
     ).where(and_(*filters_r)))).one()
 
-    # Por filial
     por_filial = (await db.execute(select(
         ConferenciaFolhaResumo.filial_nome,
         ConferenciaFolhaResumo.total_funcionarios,
@@ -529,7 +513,6 @@ async def get_stats(db, empresa_id, competencia=None, filial=None):
     ).where(and_(*filters_r))
     .order_by(desc(ConferenciaFolhaResumo.total_proventos)))).fetchall()
 
-    # Por cargo (das linhas)
     por_cargo = (await db.execute(select(
         ConferenciaFolhaLinha.cargo,
         func.count(ConferenciaFolhaLinha.id).label('n'),
@@ -541,7 +524,6 @@ async def get_stats(db, empresa_id, competencia=None, filial=None):
     .order_by(desc(func.count(ConferenciaFolhaLinha.id)))
     .limit(15))).fetchall()
 
-    # Competências disponíveis
     competencias = (await db.execute(select(
         ConferenciaFolhaResumo.competencia,
         ConferenciaFolhaResumo.mes_nome,
@@ -553,7 +535,6 @@ async def get_stats(db, empresa_id, competencia=None, filial=None):
     .group_by(ConferenciaFolhaResumo.competencia, ConferenciaFolhaResumo.mes_nome)
     .order_by(ConferenciaFolhaResumo.competencia.desc()))).fetchall()
 
-    # Listas para filtros
     filiais_list = [r[0] for r in (await db.execute(
         select(ConferenciaFolhaResumo.filial_nome)
         .where(ConferenciaFolhaResumo.empresa_id == empresa_id)
