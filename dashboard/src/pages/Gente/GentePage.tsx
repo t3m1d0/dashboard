@@ -5,6 +5,7 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { useDashboardStore } from '@/store'
 import { GenteAPI } from '@/services/api'
 import { ConferenciaPage } from '@/pages/Conferencia/ConferenciaPage'
+import { LojaSelectField } from '@/components/UI/LojaSelectField'
 
 import {
   Upload, X, CheckCircle2, AlertTriangle, RefreshCw,
@@ -34,6 +35,7 @@ const SEL_STYLE: React.CSSProperties = {
 // ── Modal de Import ───────────────────────────────────────────
 function ImportModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
   const [file, setFile]       = useState<File | null>(null)
+  const [loja, setLoja]       = useState<any>(null)
   const [loading, setLoading] = useState(false)
   const [result, setResult]   = useState<any>(null)
   const [error, setError]     = useState<string | null>(null)
@@ -42,9 +44,10 @@ function ImportModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
 
   const doImport = async () => {
     if (!file) return
+    if (!loja) { setError('Selecione a loja de destino.'); return }
     setLoading(true); setError(null)
     try {
-      const r = await GenteAPI.importar(file)
+      const r = await GenteAPI.importar(file, undefined, loja)
       setResult(r); onSuccess()
     } catch (e: any) { setError(e.message) }
     finally { setLoading(false) }
@@ -85,6 +88,11 @@ function ImportModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
               Importação incremental — registros já existentes são ignorados.
             </div>
           </div>
+
+          {/* Loja de destino */}
+          {!result && (
+            <LojaSelectField value={loja} onChange={setLoja} label="Filial / Loja de destino" />
+          )}
 
           {/* Drop zone */}
           {!result && (

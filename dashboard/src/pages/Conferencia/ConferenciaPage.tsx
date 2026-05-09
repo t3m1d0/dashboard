@@ -5,6 +5,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useDashboardStore } from '@/store'
 import { ConferenciaAPI } from '@/services/api'
+import { LojaSelectField } from '@/components/UI/LojaSelectField'
 import {
   Upload, X, CheckCircle2, AlertTriangle, RefreshCw,
   FileText, Trash2, Search, ChevronLeft, ChevronRight,
@@ -32,6 +33,7 @@ const SEL: React.CSSProperties = {
 // ── Import Modal ──────────────────────────────────────────────
 function ImportModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (r: any) => void }) {
   const [file, setFile]       = useState<File | null>(null)
+  const [loja, setLoja]       = useState<any>(null)
   const [loading, setLoading] = useState(false)
   const [result, setResult]   = useState<any>(null)
   const [error, setError]     = useState<string | null>(null)
@@ -42,7 +44,7 @@ function ImportModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
     if (!file) return
     setLoading(true); setError(null)
     try {
-      const r = await ConferenciaAPI.importar(file)
+      const r = await ConferenciaAPI.importar(file, loja || undefined)
       setResult(r); onSuccess(r)
     } catch (e: any) { setError(e.message) }
     finally { setLoading(false) }
@@ -80,6 +82,16 @@ function ImportModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
               Importe um PDF por filial. Pode importar múltiplos PDFs do mesmo mês.
             </div>
           </div>
+
+          {/* Loja — confirma ou sobrescreve o que está no PDF */}
+          {!result && (
+            <LojaSelectField
+              value={loja} onChange={setLoja}
+              label="Filial (confirme ou sobrescreva o do PDF)"
+              required={false}
+              placeholder="Detectado automaticamente do PDF..."
+            />
+          )}
 
           {!result && (
             <label

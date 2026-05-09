@@ -4,6 +4,7 @@
 // ============================================================
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { ComprasAPI } from '@/services/api'
+import { LojaSelectField } from '@/components/UI/LojaSelectField'
 import {
   Upload, RefreshCw, CheckCircle2, AlertTriangle, X,
   Package, TrendingUp, TrendingDown, Layers, Building2, Trash2,
@@ -182,6 +183,7 @@ function FilialModal({ filiais, selected, onClose, onApply }: {
 // ── Modal de import ───────────────────────────────────────────
 function ImportModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (r: any) => void }) {
   const [file, setFile]       = useState<File | null>(null)
+  const [loja, setLoja]       = useState<any>(null)
   const [loading, setLoading] = useState(false)
   const [result, setResult]   = useState<any>(null)
   const [error, setError]     = useState<string | null>(null)
@@ -190,9 +192,10 @@ function ImportModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
 
   const doImport = async () => {
     if (!file) return
+    if (!loja) { setError('Selecione a loja de destino antes de importar.'); return }
     setLoading(true); setError(null)
     try {
-      const r = await ComprasAPI.importar(file)
+      const r = await ComprasAPI.importar(file, loja)
       setResult(r)
       onSuccess(r)
     } catch (e: any) {
@@ -257,6 +260,11 @@ function ImportModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
               Exemplos: <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.68rem', color: '#f59e0b' }}>_Janeiro</span> · <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.68rem', color: '#f59e0b' }}>_Maio</span> · <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.68rem', color: '#f59e0b' }}>_Dezembro</span>
             </div>
           </div>
+
+          {/* Seleção de loja */}
+          {!result && (
+            <LojaSelectField value={loja} onChange={setLoja} label="Filial / Loja de destino" />
+          )}
 
           {/* Drop zone */}
           {!result && (
@@ -329,7 +337,7 @@ function ImportModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
               <>
                 <button onClick={onClose} style={{ padding: '10px 16px', borderRadius: 10, background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--text-secondary)', fontSize: '0.85rem', cursor: 'pointer', fontFamily: 'var(--font-body)' }}>Cancelar</button>
                 <button onClick={doImport} disabled={!file || loading}
-                  style={{ flex: 1, padding: '10px', borderRadius: 10, background: file && !loading ? 'linear-gradient(135deg, #f59e0b, #ef4444)' : 'var(--bg-elevated)', border: 'none', color: file && !loading ? '#fff' : 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 600, cursor: file && !loading ? 'pointer' : 'not-allowed', fontFamily: 'var(--font-body)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                  style={{ flex: 1, padding: '10px', borderRadius: 10, background: file && loja && !loading ? 'linear-gradient(135deg, #f59e0b, #ef4444)' : 'var(--bg-elevated)', border: 'none', color: file && loja && !loading ? '#fff' : 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 600, cursor: file && loja && !loading ? 'pointer' : 'not-allowed', fontFamily: 'var(--font-body)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                   {loading ? <><div style={{ width: 16, height: 16, borderRadius: '50%', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', animation: 'spin 0.7s linear infinite' }} /> Importando…</> : <><Upload size={14} /> Importar Agora</>}
                 </button>
               </>

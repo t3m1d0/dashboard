@@ -21,7 +21,9 @@ MAX_BYTES = settings.MAX_UPLOAD_SIZE_MB * 1024 * 1024
 @router.post("/folha/import")
 async def import_folha(
     file: UploadFile = File(...),
-    competencia: Optional[str] = Form(None),  # YYYY-MM. Se None, extrai do nome
+    competencia:  Optional[str] = Form(None),
+    loja_codigo:  Optional[str] = Form(None),
+    loja_nome:    Optional[str] = Form(None),
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
@@ -36,6 +38,8 @@ async def import_folha(
             content, file.filename or '',
             competencia, current_user.empresa_id, db
         )
+        if loja_codigo: resultado['loja_codigo'] = loja_codigo
+        if loja_nome:   resultado['loja_nome']   = loja_nome
     except ValueError as e:
         raise HTTPException(422, str(e))
     except Exception as e:

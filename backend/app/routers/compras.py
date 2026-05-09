@@ -101,6 +101,8 @@ def _extrair_mes_arquivo(filename: str):
 @router.post("/movimentacao/import")
 async def import_movimentacao(
     file: UploadFile = File(...),
+    loja_codigo: Optional[str] = Form(None),
+    loja_nome:   Optional[str] = Form(None),
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):

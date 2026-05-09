@@ -23,16 +23,19 @@ MAX_BYTES = settings.MAX_UPLOAD_SIZE_MB * 1024 * 1024
 @router.post("/import")
 async def import_pdf(
     file: UploadFile = File(...),
+    loja_codigo_override: Optional[str] = Form(None),
+    loja_nome_override:   Optional[str] = Form(None),
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
+    from fastapi import Form as FastapiForm
     content = await file.read()
     if len(content) > MAX_BYTES:
         raise HTTPException(413, f"Máximo {settings.MAX_UPLOAD_SIZE_MB}MB")
     if not (file.filename or '').lower().endswith('.pdf'):
         raise HTTPException(400, "Apenas arquivos PDF são aceitos.")
     try:
-        result = await importar_conferencia(content, file.filename or '', current_user.empresa_id, db)
+        result = await importar_conferencia(content, file.filename or '', current_user.empresa_id, db, loja_override=loja_codigo_override, loja_nome_override=loja_nome_override)
     except ValueError as e:
         raise HTTPException(422, str(e))
     except Exception as e:

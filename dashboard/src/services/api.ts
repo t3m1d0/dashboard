@@ -230,9 +230,10 @@ export const ComprasAPI = {
   getPeriodos: () => request<any[]>('/compras/movimentacao/periodos'),
   deletePeriodo: (periodo: string) =>
     request<any>(`/compras/movimentacao/periodo/${encodeURIComponent(periodo)}`, { method: 'DELETE' }),
-  importar: (file: File) => {
+  importar: (file: File, loja?: any) => {
     const form = new FormData()
     form.append('file', file)
+    if (loja) { form.append('loja_codigo', loja.codigo); form.append('loja_nome', loja.nome) }
     const token = TokenStore.get()
     return fetch(`${BASE_URL}/compras/movimentacao/import`, {
       method: 'POST',
@@ -268,10 +269,11 @@ export const GenteAPI = {
   getImportacoes: () => request<any[]>('/gente/importacoes'),
   deleteCompetencia: (competencia: string) =>
     request<any>(`/gente/folha/competencia/${encodeURIComponent(competencia)}`, { method: 'DELETE' }),
-  importar: (file: File, competencia?: string) => {
+  importar: (file: File, competencia?: string, loja?: any) => {
     const form = new FormData()
     form.append('file', file)
     if (competencia) form.append('competencia', competencia)
+    if (loja) { form.append('loja_codigo', loja.codigo); form.append('loja_nome', loja.nome) }
     const token = TokenStore.get()
     return fetch(`${BASE_URL}/gente/folha/import`, {
       method: 'POST',
@@ -304,9 +306,10 @@ export const ConferenciaAPI = {
     const q = filial ? `?filial=${encodeURIComponent(filial)}` : ''
     return request<any>(`/conferencia-folha/competencia/${encodeURIComponent(competencia)}${q}`, { method: 'DELETE' })
   },
-  importar: (file: File) => {
+  importar: (file: File, loja?: any) => {
     const form = new FormData()
     form.append('file', file)
+    if (loja) { form.append('loja_codigo_override', loja.codigo); form.append('loja_nome_override', loja.nome) }
     const token = TokenStore.get()
     return fetch(`${BASE_URL}/conferencia-folha/import`, {
       method: 'POST',

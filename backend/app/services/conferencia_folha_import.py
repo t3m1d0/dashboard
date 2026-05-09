@@ -323,16 +323,19 @@ async def importar_conferencia(
     filename: str,
     empresa_id,
     db: AsyncSession,
+    loja_override: str = None,
+    loja_nome_override: str = None,
 ) -> dict:
     text = _extract_text_raw(pdf_bytes)
     data = _parse_pdf(text, filename)
 
-    filial_nome  = data['filial_nome']
+    filial_nome  = loja_override or data['filial_nome']
+    if loja_nome_override: filial_nome = loja_nome_override
     competencia  = data['competencia']
     mes_nome_str = data['mes_nome']
 
     if not filial_nome:
-        raise ValueError("Não foi possível identificar a filial no PDF.")
+        raise ValueError("Não foi possível identificar a filial. Selecione manualmente.")
 
     # Buscar existentes para upsert
     existing_result = await db.execute(
