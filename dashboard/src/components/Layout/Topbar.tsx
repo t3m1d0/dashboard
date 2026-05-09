@@ -28,7 +28,6 @@ export function Topbar({}: TopbarProps) {
     if (activeSection === 'compras')    return ['Movimentação', 'Compras e estoque por filial']
     if (activeSection === 'financeiro') return ['Dashboard Financeiro', 'DRE · Fluxo de Caixa · Balancete · PDCA']
     if (activeSection === 'gente')      return ['Gente e Gestão', 'Folha · Colaboradores · Férias · Indicadores RH']
-    if (activeSection === 'conferencia') return ['Conferência de Folha', 'Análise por filial · Proventos · Descontos · Liquidez']
     return ['Em Breve', 'Módulo em desenvolvimento']
   })()
 
