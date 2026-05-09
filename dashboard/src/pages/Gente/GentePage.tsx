@@ -259,7 +259,7 @@ export function GentePage() {
     finally { setDeleting(false) }
   }
 
-  const hasData = stats && stats.kpis && stats.kpis.total_colaboradores > 0
+  const hasData = !!(stats && stats.kpis && (stats.kpis.total_colaboradores > 0 || stats.kpis.massa_salarial > 0))
 
   // ── Sub-sections ─────────────────────────────────────────
   const renderContent = () => {
@@ -367,19 +367,19 @@ export function GentePage() {
       {/* Filtros secundários */}
       {hasData && (
         <div className="flex gap-2 mb-5 flex-wrap">
-          {stats?.filtros?.departamentos?.length > 0 && (
+          {(stats?.filtros?.departamentos?.length || 0) > 0 && (
             <select style={SEL_STYLE} value={deptoSel} onChange={e => { setDeptoSel(e.target.value); setPageNum(1) }}>
               <option value="">Todos os departamentos</option>
               {stats.filtros.departamentos.map((d: string) => <option key={d} value={d}>{d}</option>)}
             </select>
           )}
-          {stats?.filtros?.empresas?.length > 1 && (
+          {(stats?.filtros?.empresas?.length || 0) > 1 && (
             <select style={SEL_STYLE} value={filialSel} onChange={e => { setFilialSel(e.target.value); setPageNum(1) }}>
               <option value="">Todas as empresas</option>
               {stats.filtros.empresas.map((f: string) => <option key={f} value={f}>{f}</option>)}
             </select>
           )}
-          {stats?.filtros?.cargos?.length > 0 && (
+          {(stats?.filtros?.cargos?.length || 0) > 0 && (
             <select style={SEL_STYLE} value={cargoSel} onChange={e => { setCargoSel(e.target.value); setPageNum(1) }}>
               <option value="">Todos os cargos</option>
               {stats.filtros.cargos.map((c: string) => <option key={c} value={c}>{c}</option>)}
@@ -405,8 +405,11 @@ export function GentePage() {
 
 // ── Overview / Indicadores ────────────────────────────────────
 function OverviewView({ stats, competencias }: { stats: any; competencias: any[] }) {
-  if (!stats) return null
+  if (!stats || !stats.kpis) return null
   const k = stats.kpis
+  const porDepto  = stats.por_departamento || []
+  const porCargo  = stats.por_cargo        || []
+  const compsEvo  = stats.competencias     || []
 
   return (
     <>
@@ -463,7 +466,7 @@ function OverviewView({ stats, competencias }: { stats: any; competencias: any[]
           <div style={{ fontSize: '0.85rem', fontWeight: 600, marginBottom: 3 }}>Massa Salarial por Departamento</div>
           <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginBottom: 14 }}>Top 10</div>
           <ResponsiveContainer width="100%" height={280}>
-            <BarChart data={stats.por_departamento.slice(0,10)} layout="vertical" margin={{ right: 10, left: 10 }}>
+            <BarChart data={porDepto.slice(0,10)} layout="vertical" margin={{ right: 10, left: 10 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" horizontal={false} />
               <XAxis type="number" tick={{ fontSize: 10, fill: 'var(--text-muted)' }} tickFormatter={v => fmtBRL(v)} axisLine={false} tickLine={false} />
               <YAxis type="category" dataKey="nome" tick={{ fontSize: 10, fill: 'var(--text-secondary)' }} axisLine={false} tickLine={false} width={120}
@@ -471,7 +474,7 @@ function OverviewView({ stats, competencias }: { stats: any; competencias: any[]
               <Tooltip contentStyle={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12 }}
                 formatter={(v: number, name: string) => [fmtBRL(v), name === 'massa' ? 'Massa Salarial' : 'Líquido']} />
               <Bar dataKey="massa" fill="#06b6d4" radius={[0,4,4,0]}>
-                {stats.por_departamento.slice(0,10).map((_: any, i: number) => (
+                {porDepto.slice(0,10).map((_: any, i: number) => (
                   <Cell key={i} fill={`rgba(6,182,212,${0.9 - i * 0.06})`} />
                 ))}
               </Bar>
@@ -485,9 +488,9 @@ function OverviewView({ stats, competencias }: { stats: any; competencias: any[]
           <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginBottom: 14 }}>Distribuição</div>
           <ResponsiveContainer width="100%" height={280}>
             <PieChart>
-              <Pie data={stats.por_filial.slice(0,8)} dataKey="colab" nameKey="nome"
+              <Pie data={(stats.por_filial || []).slice(0,8)} dataKey="colab" nameKey="nome"
                 cx="50%" cy="50%" innerRadius={55} outerRadius={95} paddingAngle={3}>
-                {stats.por_filial.slice(0,8).map((_: any, i: number) => (
+                {(stats.por_filial || []).slice(0,8).map((_: any, i: number) => (
                   <Cell key={i} fill={CORES[i % CORES.length]} />
                 ))}
               </Pie>
@@ -501,12 +504,12 @@ function OverviewView({ stats, competencias }: { stats: any; competencias: any[]
       </div>
 
       {/* Evolução mensal */}
-      {competencias.length > 1 && (
+      {compsEvo.length > 1 && (
         <div className="rounded-2xl p-5 mb-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
           <div style={{ fontSize: '0.85rem', fontWeight: 600, marginBottom: 3 }}>Evolução da Massa Salarial</div>
           <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginBottom: 14 }}>Por competência</div>
           <ResponsiveContainer width="100%" height={200}>
-            <LineChart data={[...competencias].reverse()} margin={{ right: 10, left: 10 }}>
+            <LineChart data={[...compsEvo].reverse()} margin={{ right: 10, left: 10 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
               <XAxis dataKey="mes_nome" tick={{ fontSize: 10, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fontSize: 10, fill: 'var(--text-muted)' }} tickFormatter={v => fmtBRL(v)} axisLine={false} tickLine={false} />
@@ -533,7 +536,7 @@ function OverviewView({ stats, competencias }: { stats: any; competencias: any[]
               </tr>
             </thead>
             <tbody>
-              {stats.por_cargo.map((c: any, i: number) => (
+              {porCargo.map((c: any, i: number) => (
                 <tr key={i} onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bg-elevated)' }}
                   onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '' }}>
                   <td style={{ padding: '8px 14px', fontSize: '0.8rem' }}>{c.nome}</td>
