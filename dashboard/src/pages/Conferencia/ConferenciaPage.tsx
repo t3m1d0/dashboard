@@ -311,18 +311,28 @@ export function ConferenciaPage() {
           ))}
         </div>
 
-        {/* Encargos */}
-        <div className="grid grid-cols-3 gap-3 mb-5">
-          {[
-            { label: 'INSS',      value: fmtBRL(kpis.total_inss),     color: '#f59e0b' },
-            { label: 'IRRF',      value: fmtBRL(kpis.total_irrf),     color: '#ec4899' },
-            { label: 'VT',        value: fmtBRL(kpis.total_vt),       color: '#8b5cf6' },
-          ].map(item => (
-            <div key={item.label} className="rounded-2xl p-3.5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-              <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginBottom: 4 }}>{item.label}</div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '1.15rem', fontWeight: 700, color: item.color }}>{item.value}</div>
-            </div>
-          ))}
+        {/* Descontos detalhados */}
+        <div className="rounded-2xl p-5 mb-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+          <div style={{ fontSize: '0.82rem', fontWeight: 600, marginBottom: 14 }}>Detalhamento de Descontos</div>
+          <div className="grid grid-cols-3 lg:grid-cols-5 gap-3">
+            {[
+              { label: 'INSS',               value: fmtBRL(kpis.total_inss || 0),          color: '#f59e0b' },
+              { label: 'IRRF',               value: fmtBRL(kpis.total_irrf || 0),          color: '#ec4899' },
+              { label: 'VT',                 value: fmtBRL(kpis.total_vt || 0),            color: '#8b5cf6' },
+              { label: 'Faltas',             value: fmtBRL(kpis.total_faltas || 0),        color: '#ef4444' },
+              { label: 'Desc. Diversos',     value: fmtBRL(kpis.total_desc_diversos || 0), color: '#6b7280' },
+              { label: 'Horas Falta',        value: fmtBRL(kpis.total_horas_falta || 0),   color: '#ef4444' },
+              { label: 'Adiantamento Sal.',  value: fmtBRL(kpis.total_adiantamento || 0),  color: '#3b82f6' },
+              { label: `Vale Func. OS (${kpis.qtd_vale_func_os || 0} OS)`, value: fmtBRL(kpis.total_vale_func_os || 0), color: '#06b6d4' },
+              { label: 'Outros Débitos',     value: fmtBRL(kpis.total_outros || 0),        color: '#6b7280' },
+              { label: 'TOTAL DESCONTOS',    value: fmtBRL(kpis.total_descontos || 0),     color: '#ef4444', bold: true },
+            ].map(item => (
+              <div key={item.label} className="rounded-xl p-3" style={{ background: 'var(--bg-elevated)', border: `1px solid ${(item as any).bold ? 'rgba(239,68,68,0.3)' : 'var(--border)'}` }}>
+                <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{item.label}</div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.95rem', fontWeight: (item as any).bold ? 700 : 600, color: item.color }}>{item.value}</div>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Gráfico por filial */}
@@ -392,7 +402,7 @@ export function ConferenciaPage() {
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr>
-                    {['Cargo','Colaboradores','Total Proventos','Média Proventos','Total Líquido'].map(h => (
+                    {['Cargo','Colab.','Proventos','Descontos','INSS','Adiant. Sal.','Líquido'].map(h => (
                       <th key={h} style={{ padding: '8px 14px', textAlign: 'left', fontSize: '0.62rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', borderBottom: '1px solid var(--border)', fontWeight: 600, background: 'var(--bg-elevated)', whiteSpace: 'nowrap' }}>{h}</th>
                     ))}
                   </tr>
@@ -520,7 +530,7 @@ function ColabView({ linhas, page, setPage, busca, setBusca }: any) {
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr>
-                  {['Colaborador','Cargo','Filial','Admissão','Proventos','INSS','IRRF','Descontos','Líquido','PIX/CPF'].map(h => (
+                  {['Colaborador','Cargo','Filial','Admissão','Proventos','INSS','Adiant.Sal','Descontos','Líquido','PIX/CPF'].map(h => (
                     <th key={h} style={{ padding: '8px 12px', textAlign: 'left', fontSize: '0.62rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', borderBottom: '1px solid var(--border)', fontWeight: 600, background: 'var(--bg-elevated)', whiteSpace: 'nowrap' }}>{h}</th>
                   ))}
                 </tr>
