@@ -48,21 +48,13 @@ const GROUPS: {
   {
     id: 'gente', label: 'Gente e Gestão', icon: <Users size={15} />, color: '#06b6d4', available: true,
     subs: [
-      { id: 'overview',      label: 'Visão Geral',        icon: <LayoutDashboard size={13} /> },
-      { id: 'folha',         label: 'Folha de Pagamento', icon: <FileText size={13} /> },
-      { id: 'colaboradores', label: 'Colaboradores',      icon: <Users size={13} /> },
-      { id: 'ferias',        label: 'Férias / Afast.',    icon: <Calendar size={13} /> },
-      { id: 'indicadores',   label: 'Indicadores RH',     icon: <BarChart2 size={13} /> },
-      { id: 'upload',        label: 'Upload',             icon: <Upload size={13} /> },
-    ],
-  },
-  {
-    id: 'conferencia', label: 'Conferência de Folha', icon: <FileText size={15} />, color: '#f59e0b', available: true,
-    subs: [
-      { id: 'overview',      label: 'Visão Geral',    icon: <LayoutDashboard size={13} /> },
-      { id: 'filiais',       label: 'Por Filial',     icon: <Building2 size={13} /> },
-      { id: 'colaboradores', label: 'Colaboradores',  icon: <Users size={13} /> },
-      { id: 'upload',        label: 'Upload PDF',     icon: <Upload size={13} /> },
+      { id: 'overview',         label: 'Visão Geral',          icon: <LayoutDashboard size={13} /> },
+      { id: 'folha',            label: 'Folha de Pagamento',   icon: <FileText size={13} /> },
+      { id: 'colaboradores',    label: 'Colaboradores',        icon: <Users size={13} /> },
+      { id: 'conferencia',      label: 'Conferência de Folha', icon: <Building2 size={13} /> },
+      { id: 'ferias',           label: 'Férias / Afast.',      icon: <Calendar size={13} /> },
+      { id: 'indicadores',      label: 'Indicadores RH',       icon: <BarChart2 size={13} /> },
+      { id: 'upload',           label: 'Upload',               icon: <Upload size={13} /> },
     ],
   },
   { id: 'marketing', label: 'Marketing', icon: <BarChart2 size={15} />, color: '#ec4899', available: false },
@@ -83,7 +75,6 @@ export function Sidebar() {
     if (group.id === 'compras') setTechExpanded(!techExpanded)
     if (group.id === 'financeiro') setTechExpanded(!techExpanded)
     if (group.id === 'gente') setTechExpanded(!techExpanded)
-    if (group.id === 'conferencia') setTechExpanded(!techExpanded)
   }
 
   const handleSubClick = (sub: string, parentSection: string = 'tecnologia') => {
@@ -91,7 +82,6 @@ export function Sidebar() {
     if (parentSection === 'tecnologia') setTechSubSection(sub as TechSubSection)
     if (parentSection === 'financeiro') useDashboardStore.getState().setFinanceiroSubSection(sub)
     if (parentSection === 'gente') useDashboardStore.getState().setGenteSubSection(sub)
-    if (parentSection === 'conferencia') useDashboardStore.getState().setConferenciaSubSection(sub)
     if (window.innerWidth <= 900) useDashboardStore.getState().setSidebarOpen(false)
   }
 
@@ -130,7 +120,7 @@ export function Sidebar() {
       <nav className="flex-1 overflow-y-auto py-3">
         {GROUPS.map(group => {
           const isActive   = activeSection === group.id
-          const isExpanded = isActive && group.subs && techExpanded && (group.id === 'tecnologia' || group.id === 'compras' || group.id === 'financeiro' || group.id === 'gente' || group.id === 'conferencia')
+          const isExpanded = isActive && group.subs && techExpanded && (group.id === 'tecnologia' || group.id === 'compras' || group.id === 'financeiro' || group.id === 'gente')
 
           return (
             <div key={group.id}>
