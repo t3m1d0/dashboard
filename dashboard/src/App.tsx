@@ -20,6 +20,7 @@ import { RoadmapPage }         from '@/pages/RoadmapPage'
 import { MovimentacaoPage }    from '@/pages/Compras/MovimentacaoPage'
 import { FinanceiroPage }      from '@/pages/Financeiro/FinanceiroPage'
 import { GentePage }           from '@/pages/Gente/GentePage'
+import { ConfiguracoesPage }   from '@/pages/Configuracoes/ConfiguracoesPage'
 
 const TECH_PAGES: Record<TechSubSection, React.ReactNode> = {
   overview:        <OverviewPage />,
@@ -105,6 +106,7 @@ export default function App() {
     }
     if (activeSection === 'financeiro') return <FinanceiroPage />
     if (activeSection === 'gente')      return <GentePage />
+    if (activeSection === 'configuracoes') return <ConfiguracoesPage />
     if (activeSection === 'marketing')  return <ComingSoon label="Marketing & Growth" />
     if (activeSection === 'rh')         return <ComingSoon label="RH & Pessoas" />
     return <OverviewPage />

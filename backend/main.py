@@ -16,6 +16,7 @@ from app.routers import compras
 from app.routers import financeiro
 from app.routers import gente
 from app.routers import conferencia_folha
+from app.routers import lojas
 
 
 @asynccontextmanager
@@ -57,6 +58,7 @@ app.include_router(compras.router,       prefix="/api")
 app.include_router(financeiro.router,    prefix="/api")
 app.include_router(gente.router,         prefix="/api")
 app.include_router(conferencia_folha.router, prefix="/api")
+app.include_router(lojas.router,             prefix="/api")
 
 @app.get("/api/health")
 async def health():

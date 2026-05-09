@@ -104,7 +104,7 @@ export const UploadsAPI = {
     const token = TokenStore.get()
     return fetch(`${BASE_URL}/uploads`, {
       method: 'POST',
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      headers: token ? { Authorization: 'Bearer ' + token } : {},
       body: form,
     }).then((r) => r.json())
   },
@@ -172,7 +172,7 @@ export const SustentacaoUploadAPI = {
     const token = TokenStore.get()
     return fetch(`${BASE_URL}/uploads/sustentacao`, {
       method: 'POST',
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      headers: token ? { Authorization: 'Bearer ' + token } : {},
       body: form,
     }).then(async (r) => {
       if (r.status === 401) { TokenStore.clear(); window.dispatchEvent(new CustomEvent('auth:expired')); throw new Error('Sessão expirada') }
@@ -204,7 +204,7 @@ export const SustentacaoAPI = {
     const token = TokenStore.get()
     return fetch(`${BASE_URL}/sustentacao/import`, {
       method: 'POST',
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      headers: token ? { Authorization: 'Bearer ' + token } : {},
       body: form,
     }).then(async (r) => {
       if (r.status === 401) { TokenStore.clear(); window.dispatchEvent(new CustomEvent('auth:expired')); throw new Error('Sessão expirada') }
@@ -236,7 +236,7 @@ export const ComprasAPI = {
     const token = TokenStore.get()
     return fetch(`${BASE_URL}/compras/movimentacao/import`, {
       method: 'POST',
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      headers: token ? { Authorization: 'Bearer ' + token } : {},
       body: form,
     }).then(async (r) => {
       if (r.status === 401) { TokenStore.clear(); window.dispatchEvent(new CustomEvent('auth:expired')); throw new Error('Sessão expirada') }
@@ -275,7 +275,7 @@ export const GenteAPI = {
     const token = TokenStore.get()
     return fetch(`${BASE_URL}/gente/folha/import`, {
       method: 'POST',
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      headers: token ? { Authorization: 'Bearer ' + token } : {},
       body: form,
     }).then(async (r) => {
       if (r.status === 401) { TokenStore.clear(); window.dispatchEvent(new CustomEvent('auth:expired')); throw new Error('Sessão expirada') }
@@ -310,12 +310,42 @@ export const ConferenciaAPI = {
     const token = TokenStore.get()
     return fetch(`${BASE_URL}/conferencia-folha/import`, {
       method: 'POST',
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      headers: token ? { Authorization: 'Bearer ' + token } : {},
       body: form,
     }).then(async (r) => {
       if (r.status === 401) { TokenStore.clear(); window.dispatchEvent(new CustomEvent('auth:expired')); throw new Error('Sessão expirada') }
       const data = await r.json()
       if (!r.ok) throw new Error(data.detail || `Erro ${r.status}`)
+      return data
+    })
+  },
+}
+
+// ── Lojas (CSC) ──────────────────────────────────────────────
+export const LojasAPI = {
+  list: (params?: Record<string, string | number | boolean>) => {
+    const q = params && Object.keys(params).length > 0
+      ? '?' + new URLSearchParams(params as any).toString() : ''
+    return request<any>(`/lojas${q}`)
+  },
+  get: (id: string) => request<any>(`/lojas/${id}`),
+  getGrupos: () => request<any[]>('/lojas/grupos'),
+  getStats: () => request<any>('/lojas/stats'),
+  create: (data: any) => request<any>('/lojas', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }),
+  update: (id: string, data: any) => request<any>(`/lojas/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }),
+  deactivate: (id: string) => request<any>(`/lojas/${id}`, { method: 'DELETE' }),
+  importar: (file: File) => {
+    const form = new FormData()
+    form.append('file', file)
+    const token = TokenStore.get()
+    return fetch(BASE_URL + '/lojas/import', {
+      method: 'POST',
+      headers: token ? { Authorization: 'Bearer ' + token } : {},
+      body: form,
+    }).then(async (r) => {
+      if (r.status === 401) { TokenStore.clear(); window.dispatchEvent(new CustomEvent('auth:expired')); throw new Error('Sessão expirada') }
+      const data = await r.json()
+      if (!r.ok) throw new Error(data.detail || 'Erro ' + r.status)
       return data
     })
   },

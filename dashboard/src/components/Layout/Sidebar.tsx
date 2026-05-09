@@ -7,7 +7,7 @@ import {
   LayoutDashboard, Headphones, Code2, PackageCheck,
   TrendingUp, Map, ChevronDown, BarChart2, Database,
   Users, Cpu, LogOut, ShoppingCart, Package, List, Zap, Coins, Upload,
-  FileText, Calendar, Building2
+  FileText, Calendar, Building2, Settings
 } from 'lucide-react'
 import { TokenStore } from '@/services/api'
 
@@ -57,7 +57,8 @@ const GROUPS: {
       { id: 'upload',           label: 'Upload',               icon: <Upload size={13} /> },
     ],
   },
-  { id: 'marketing', label: 'Marketing', icon: <BarChart2 size={15} />, color: '#ec4899', available: false },
+  { id: 'marketing',       label: 'Marketing',     icon: <BarChart2 size={15} />, color: '#ec4899', available: false },
+  { id: 'configuracoes', label: 'Configurações', icon: <Settings size={15} />, color: '#6b7280', available: true  },
 ]
 
 export function Sidebar() {

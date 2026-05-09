@@ -1,0 +1,35 @@
+# ── Frontend ───────────────────────────
+node_modules/
+dist/
+.env.local
+.env.development.local
+.env.production.local
+*.log
+
+# ── Backend ────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
+*.egg-info/
+.eggs/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+backend/.env
+uploads/
+
+# ── Sistema ────────────────────────────
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.idea/
+.vscode/
+*.zip
+
+# ── Alembic ────────────────────────────
+# (manter migrations/versions/*.py no git)

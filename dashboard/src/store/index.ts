@@ -39,6 +39,10 @@ interface DashboardStore {
   setGenteSubSection: (sub: string) => void
   conferenciaSubSection: string
   setConferenciaSubSection: (sub: string) => void
+  lojaAtiva: any | null        // loja selecionada globalmente
+  setLojaAtiva: (loja: any | null) => void
+  lojas: any[]                 // cache de lojas
+  setLojas: (lojas: any[]) => void
   periodos: PeriodosPorSecao
   setPeriodoSecao: (secao: TechSubSection, p: PeriodoFiltro) => void
   isDark: boolean
@@ -75,6 +79,10 @@ export const useDashboardStore = create<DashboardStore>()(
       setGenteSubSection: (genteSubSection) => set({ genteSubSection }),
       conferenciaSubSection: 'overview',
       setConferenciaSubSection: (conferenciaSubSection) => set({ conferenciaSubSection }),
+      lojaAtiva: null,
+      setLojaAtiva: (lojaAtiva) => set({ lojaAtiva }),
+      lojas: [],
+      setLojas: (lojas) => set({ lojas }),
       periodos: PERIODOS_INICIAIS,
       setPeriodoSecao: (secao, p) =>
         set((state) => ({ periodos: { ...state.periodos, [secao]: p } })),

@@ -77,8 +77,11 @@ def _extract_text_raw(pdf_bytes: bytes) -> str:
         f.write(pdf_bytes)
         tmp = f.name
     try:
+        # Find pdftotext - try multiple paths
+        import shutil
+        pdftotext_bin = shutil.which('pdftotext') or '/usr/bin/pdftotext'
         result = subprocess.run(
-            ['pdftotext', '-raw', tmp, '-'],
+            [pdftotext_bin, '-raw', tmp, '-'],
             capture_output=True, text=True, timeout=30
         )
         if result.returncode != 0:
