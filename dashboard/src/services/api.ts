@@ -285,3 +285,38 @@ export const GenteAPI = {
     })
   },
 }
+
+// ── Conferência de Folha ─────────────────────────────────────
+export const ConferenciaAPI = {
+  getStats: (params?: Record<string, string>) => {
+    const q = params && Object.keys(params).length > 0
+      ? '?' + new URLSearchParams(params).toString() : ''
+    return request<any>(`/conferencia-folha/stats${q}`)
+  },
+  getLinhas: (params?: Record<string, string | number>) => {
+    const q = params && Object.keys(params).length > 0
+      ? '?' + new URLSearchParams(params as any).toString() : ''
+    return request<any>(`/conferencia-folha/linhas${q}`)
+  },
+  getCompetencias: () => request<any[]>('/conferencia-folha/competencias'),
+  getImportacoes: () => request<any[]>('/conferencia-folha/importacoes'),
+  deleteCompetencia: (competencia: string, filial?: string) => {
+    const q = filial ? `?filial=${encodeURIComponent(filial)}` : ''
+    return request<any>(`/conferencia-folha/competencia/${encodeURIComponent(competencia)}${q}`, { method: 'DELETE' })
+  },
+  importar: (file: File) => {
+    const form = new FormData()
+    form.append('file', file)
+    const token = TokenStore.get()
+    return fetch(`${BASE_URL}/conferencia-folha/import`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: form,
+    }).then(async (r) => {
+      if (r.status === 401) { TokenStore.clear(); window.dispatchEvent(new CustomEvent('auth:expired')); throw new Error('Sessão expirada') }
+      const data = await r.json()
+      if (!r.ok) throw new Error(data.detail || `Erro ${r.status}`)
+      return data
+    })
+  },
+}
