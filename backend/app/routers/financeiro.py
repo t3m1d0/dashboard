@@ -283,6 +283,118 @@ async def delete_lancamentos(
     return {'ok': True, 'removidos': result.rowcount}
 
 
+
+
+# ── Stats agregados ───────────────────────────────────────────
+@router.get("/stats")
+async def get_financeiro_stats(
+    loja_codigo: Optional[str] = Query(None),
+    lojas:       Optional[str] = Query(None),   # múltiplas separadas por ||
+    periodo:     Optional[str] = Query(None),
+    tipo:        Optional[str] = Query(None),
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    """KPIs financeiros agregados."""
+    filters = [FinLancamento.empresa_id == current_user.empresa_id]
+
+    # Filtro de loja(s)
+    loja_list = []
+    if loja_codigo: loja_list = [loja_codigo]
+    elif lojas:     loja_list = [l.strip() for l in lojas.split('||') if l.strip()]
+    if loja_list:
+        from sqlalchemy import or_
+        filters.append(or_(*[FinLancamento.loja_codigo == l for l in loja_list]))
+
+    if periodo: filters.append(FinLancamento.periodo == periodo)
+    if tipo:    filters.append(FinLancamento.tipo    == tipo)
+
+    base = and_(*filters)
+
+    # KPIs por tipo
+    result = await db.execute(
+        select(
+            FinLancamento.tipo,
+            func.count(FinLancamento.id).label('n'),
+            func.sum(FinLancamento.valor).label('total'),
+        ).where(base)
+        .group_by(FinLancamento.tipo)
+    )
+    por_tipo = {r.tipo: {'n': int(r.n or 0), 'total': round(float(r.total or 0), 2)} for r in result}
+
+    # Top clientes (recebidas)
+    top_clientes = []
+    rc = (await db.execute(
+        select(
+            FinLancamento.cliente,
+            func.sum(FinLancamento.valor).label('total'),
+            func.count(FinLancamento.id).label('n'),
+        ).where(and_(base, FinLancamento.tipo == 'recebidas', FinLancamento.cliente != None))
+        .group_by(FinLancamento.cliente)
+        .order_by(desc(func.sum(FinLancamento.valor))).limit(10)
+    )).fetchall()
+    top_clientes = [{'nome': r.cliente, 'total': round(float(r.total or 0), 2), 'n': int(r.n)} for r in rc]
+
+    # Top fornecedores (pagas)
+    top_forn = []
+    rf = (await db.execute(
+        select(
+            FinLancamento.fornecedor,
+            func.sum(FinLancamento.valor).label('total'),
+            func.count(FinLancamento.id).label('n'),
+        ).where(and_(base, FinLancamento.tipo == 'pagas', FinLancamento.fornecedor != None))
+        .group_by(FinLancamento.fornecedor)
+        .order_by(desc(func.sum(FinLancamento.valor))).limit(10)
+    )).fetchall()
+    top_forn = [{'nome': r.fornecedor, 'total': round(float(r.total or 0), 2), 'n': int(r.n)} for r in rf]
+
+    # Períodos disponíveis
+    periodos_r = await db.execute(
+        select(
+            FinLancamento.periodo,
+            func.count(FinLancamento.id).label('n'),
+            func.sum(FinLancamento.valor).label('total'),
+        )
+        .where(FinLancamento.empresa_id == current_user.empresa_id)
+        .group_by(FinLancamento.periodo)
+        .order_by(FinLancamento.periodo.desc())
+    )
+    periodos = [
+        {'periodo': r.periodo, 'n': int(r.n), 'total': round(float(r.total or 0), 2)}
+        for r in periodos_r if r.periodo
+    ]
+
+    # Lojas com dados
+    lojas_r = await db.execute(
+        select(FinLancamento.loja_codigo, FinLancamento.loja_nome)
+        .where(FinLancamento.empresa_id == current_user.empresa_id)
+        .distinct().order_by(FinLancamento.loja_nome)
+    )
+    lojas_list = [{'codigo': r.loja_codigo, 'nome': r.loja_nome} for r in lojas_r]
+
+    rec   = por_tipo.get('recebidas', {})
+    pag   = por_tipo.get('pagas', {})
+    ar    = por_tipo.get('a_receber', {})
+    ap    = por_tipo.get('a_pagar', {})
+    ext   = por_tipo.get('extrato', {})
+
+    return {
+        'kpis': {
+            'recebidas':    rec.get('total', 0),  'n_recebidas':   rec.get('n', 0),
+            'pagas':        pag.get('total', 0),  'n_pagas':       pag.get('n', 0),
+            'a_receber':    ar.get('total', 0),   'n_a_receber':   ar.get('n', 0),
+            'a_pagar':      ap.get('total', 0),   'n_a_pagar':     ap.get('n', 0),
+            'extrato':      ext.get('total', 0),
+            'caixa':        round(rec.get('total', 0) - pag.get('total', 0), 2),
+            'saldo_futuro': round(ar.get('total', 0) - ap.get('total', 0), 2),
+        },
+        'por_tipo':      por_tipo,
+        'top_clientes':  top_clientes,
+        'top_fornecedores': top_forn,
+        'periodos':      periodos,
+        'lojas':         lojas_list,
+    }
+
 # ── Helper interno ────────────────────────────────────────────
 async def _list_tipo(db, tipo, loja_codigo, periodo, empresa_id, page, page_size):
     filters = [
