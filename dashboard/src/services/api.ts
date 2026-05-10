@@ -353,3 +353,50 @@ export const LojasAPI = {
     })
   },
 }
+
+// ── Financeiro ────────────────────────────────────────────────
+export const FinanceiroAPI = {
+  getStats: (params?: Record<string, string>) => {
+    const q = params && Object.keys(params).length > 0
+      ? '?' + new URLSearchParams(params).toString() : ''
+    return request<any>(`/financeiro/stats${q}`)
+  },
+  getItens: (tipo: string, params?: Record<string, string | number>) => {
+    // Map tipo to actual endpoint names
+    const endpointMap: Record<string, string> = {
+      'recebidas': 'recebidas',
+      'pagas': 'pagas',
+      'a_receber': 'contas-receber',
+      'a_pagar': 'contas-pagar',
+      'extrato': 'extratos',
+    }
+    const endpoint = endpointMap[tipo] || tipo
+    const q = params && Object.keys(params).length > 0
+      ? '?' + new URLSearchParams(params as any).toString() : ''
+    return request<any>(`/financeiro/${endpoint}${q}`)
+  },
+  getPeriodos: (loja_codigo?: string) => {
+    const q = loja_codigo ? `?loja_codigo=${loja_codigo}` : ''
+    return request<any[]>(`/financeiro/periodos/${loja_codigo || '_all'}${q}`)
+  },
+  importar: (file: File, loja: any, periodo: string, tipo?: string) => {
+    const form = new FormData()
+    form.append('file', file)
+    form.append('loja_codigo', loja.codigo)
+    form.append('periodo', periodo)
+    if (tipo) form.append('tipo', tipo)
+    const token = TokenStore.get()
+    return fetch(BASE_URL + '/financeiro/import', {
+      method: 'POST',
+      headers: token ? { Authorization: 'Bearer ' + token } : {},
+      body: form,
+    }).then(async (r) => {
+      if (r.status === 401) { TokenStore.clear(); window.dispatchEvent(new CustomEvent('auth:expired')); throw new Error('Sessão expirada') }
+      const data = await r.json()
+      if (!r.ok) throw new Error(data.detail || 'Erro ' + r.status)
+      return data
+    })
+  },
+  deleteItem: (loja_codigo: string, tipo: string, periodo: string) =>
+    request<any>(`/financeiro/lancamentos/${loja_codigo}/${tipo}/${periodo}`, { method: 'DELETE' }),
+}
