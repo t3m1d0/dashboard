@@ -200,6 +200,7 @@ export function GentePage() {
   // Lista
   const [itens, setItens]               = useState<any>(null)
   const [colabs, setColabs]             = useState<any>(null)
+  const [turnover, setTurnover]         = useState<any>(null)
   const [pageNum, setPageNum]           = useState(1)
   const [busca, setBusca]               = useState('')
   const [deleting, setDeleting]         = useState(false)
@@ -247,15 +248,24 @@ export function GentePage() {
 
   const loadColabs = useCallback(async () => {
     const params: Record<string, string | number> = { page: pageNum, page_size: 50 }
-    if (busca) params.busca = busca
-    try { const data = await GenteAPI.getColaboradores(params); setColabs(data) } catch {}
-  }, [busca, pageNum])
+    if (competenciaSel) params.competencia = competenciaSel
+    if (deptoSel)       params.empresa     = deptoSel
+    if (cargoSel)       params.cargo       = cargoSel
+    if (busca)          params.busca       = busca
+    try { const data = await GenteAPI.getColaboradoresPorCompetencia(params); setColabs(data) } catch {}
+  }, [busca, pageNum, competenciaSel, deptoSel, cargoSel])
+
+  const loadTurnover = useCallback(async () => {
+    const params: Record<string, string> = {}
+    if (competenciaSel) params.competencia_atual = competenciaSel
+    try { const data = await GenteAPI.getTurnover(params); setTurnover(data) } catch {}
+  }, [competenciaSel])
 
   useEffect(() => { loadCompetencias() }, [])
   useEffect(() => { loadStats() }, [competenciaSel, deptoSel, filialSel, cargoSel, lojasAtivas])
   useEffect(() => {
     if (genteSubSection === 'folha' || genteSubSection === 'overview') loadItens()
-    if (genteSubSection === 'colaboradores') loadColabs()
+    if (genteSubSection === 'colaboradores') { loadColabs(); loadTurnover() }
   }, [genteSubSection, competenciaSel, deptoSel, filialSel, cargoSel, busca, pageNum])
 
   const handleDelete = async () => {
@@ -312,7 +322,7 @@ export function GentePage() {
       case 'folha':
         return <FolhaView itens={itens} page={pageNum} setPage={setPageNum} busca={busca} setBusca={setBusca} />
       case 'colaboradores':
-        return <ColabView colabs={colabs} page={pageNum} setPage={setPageNum} busca={busca} setBusca={setBusca} />
+        return <ColabView colabs={colabs} turnover={turnover} page={pageNum} setPage={setPageNum} busca={busca} setBusca={setBusca} />
       case 'ferias':
         return <FeriasView stats={stats} />
       case 'upload':
@@ -640,68 +650,161 @@ function FolhaView({ itens, page, setPage, busca, setBusca }: any) {
 }
 
 // ── Colaboradores view ────────────────────────────────────────
-function ColabView({ colabs, page, setPage, busca, setBusca }: any) {
+function ColabView({ colabs, turnover, page, setPage, busca, setBusca }: any) {
+  const [tab, setTab] = useState<'ativos'|'contratados'|'desligados'>('ativos')
+
+  const tv = turnover || {}
+  const tabStyle = (t: string) => ({
+    padding: '6px 16px', borderRadius: 8, fontSize: '0.78rem', fontWeight: 600,
+    background: tab === t ? '#06b6d4' : 'var(--bg-elevated)',
+    color: tab === t ? '#0a0a0a' : 'var(--text-secondary)',
+    border: `1px solid ${tab === t ? '#06b6d4' : 'var(--border)'}`,
+    cursor: 'pointer', fontFamily: 'var(--font-body)',
+  })
+
   return (
-    <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-      <div className="flex items-center gap-3 p-4" style={{ borderBottom: '1px solid var(--border)' }}>
-        <div className="relative" style={{ maxWidth: 280 }}>
+    <div className="flex flex-col gap-4">
+      {/* Turnover Cards */}
+      {tv.competencia_atual && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {[
+            { label: 'Headcount Atual',   value: tv.headcount_atual,    sub: tv.competencia_atual,    color: '#06b6d4' },
+            { label: 'Variação',          value: (tv.variacao_headcount > 0 ? '+' : '') + tv.variacao_headcount, sub: `vs ${tv.competencia_anterior || '—'}`, color: tv.variacao_headcount > 0 ? '#10b981' : tv.variacao_headcount < 0 ? '#ef4444' : '#6b7280' },
+            { label: 'Contratados',       value: tv.contratados,         sub: tv.competencia_atual,    color: '#10b981' },
+            { label: 'Desligados',        value: tv.desligados,          sub: tv.competencia_anterior || '—', color: '#ef4444' },
+          ].map(item => (
+            <div key={item.label} className="rounded-2xl p-4 relative overflow-hidden" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+              <div className="absolute top-0 left-0 right-0 rounded-t-2xl" style={{ height: 3, background: item.color }} />
+              <div style={{ fontSize: '0.68rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', marginBottom: 4 }}>{item.label}</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '1.6rem', fontWeight: 700, color: item.color }}>{item.value ?? '—'}</div>
+              <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: 3 }}>{item.sub}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Turnover % */}
+      {tv.turnover_pct > 0 && (
+        <div className="rounded-2xl p-4" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 16 }}>
+          <div>
+            <div style={{ fontSize: '0.68rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)' }}>Turnover do Período</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '2rem', fontWeight: 700, color: tv.turnover_pct > 5 ? '#ef4444' : tv.turnover_pct > 3 ? '#f59e0b' : '#10b981' }}>
+              {tv.turnover_pct}%
+            </div>
+          </div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', maxWidth: 320 }}>
+            Fórmula: (Desligados + Contratados) ÷ 2 ÷ Headcount médio × 100<br/>
+            <span style={{ color: 'var(--text-muted)', fontSize: '0.68rem' }}>
+              ({tv.desligados} + {tv.contratados}) ÷ 2 ÷ {((tv.headcount_atual + tv.headcount_anterior) / 2).toFixed(0)} × 100
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Tabs */}
+      <div className="flex gap-2 flex-wrap items-center">
+        <button onClick={() => setTab('ativos')} style={tabStyle('ativos')}>
+          Ativos ({tv.headcount_atual ?? colabs?.total ?? '…'})
+        </button>
+        {(tv.contratados > 0) && (
+          <button onClick={() => setTab('contratados')} style={tabStyle('contratados')}>
+            🟢 Contratados ({tv.contratados})
+          </button>
+        )}
+        {(tv.desligados > 0) && (
+          <button onClick={() => setTab('desligados')} style={tabStyle('desligados')}>
+            🔴 Desligados ({tv.desligados})
+          </button>
+        )}
+        <div className="relative ml-auto">
           <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
-          <input type="text" placeholder="Buscar colaborador…" value={busca}
-            onChange={e => setBusca(e.target.value)}
-            style={{ ...SEL_STYLE, paddingLeft: 30, width: 260 }} />
+          <input type="text" placeholder="Buscar…" value={busca} onChange={e => setBusca(e.target.value)}
+            style={{ ...SEL_STYLE, paddingLeft: 28, width: 200, padding: '6px 10px 6px 28px' }} />
         </div>
-        {colabs && <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginLeft: 'auto', fontFamily: 'var(--font-mono)' }}>{colabs.total?.toLocaleString('pt-BR')} colaboradores</span>}
       </div>
-      {!colabs ? (
-        <div className="flex items-center justify-center py-12" style={{ color: 'var(--text-muted)', fontSize: '0.82rem' }}>
-          <div style={{ width: 18, height: 18, borderRadius: '50%', border: '2px solid var(--border)', borderTopColor: '#06b6d4', animation: 'spin 0.7s linear infinite', marginRight: 10 }} />Carregando…
-        </div>
-      ) : (
-        <>
+
+      {/* Lista de contratados/desligados */}
+      {(tab === 'contratados' || tab === 'desligados') && (
+        <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--bg-card)', border: `1px solid ${tab === 'contratados' ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)'}` }}>
+          <div className="px-4 py-3" style={{ borderBottom: '1px solid var(--border)', fontSize: '0.82rem', fontWeight: 600, color: tab === 'contratados' ? '#10b981' : '#ef4444' }}>
+            {tab === 'contratados' ? '🟢 Contratados' : '🔴 Desligados'} — {tv.competencia_atual}
+          </div>
           <div className="overflow-x-auto">
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr>
-                  {['Matrícula','Nome','Cargo','Departamento','Filial','Admissão','Situação','Salário Base'].map(h => (
-                    <th key={h} style={{ padding: '8px 12px', textAlign: 'left', fontSize: '0.62rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', borderBottom: '1px solid var(--border)', fontWeight: 600, background: 'var(--bg-elevated)', whiteSpace: 'nowrap' }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
+              <thead><tr>
+                {['Matrícula','Nome','Cargo','Empresa','Admissão','Sal. Base','Sal. Bruto','Líquido'].map(h => (
+                  <th key={h} style={{ padding: '7px 12px', textAlign: 'left', fontSize: '0.62rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', borderBottom: '1px solid var(--border)', fontWeight: 600, background: 'var(--bg-elevated)', whiteSpace: 'nowrap' }}>{h}</th>
+                ))}
+              </tr></thead>
               <tbody>
-                {colabs.items.map((r: any) => (
-                  <tr key={r.id} onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bg-elevated)' }}
+                {(tab === 'contratados' ? tv.lista_contratados : tv.lista_desligados)?.map((r: any, i: number) => (
+                  <tr key={i} onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bg-elevated)' }}
                     onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '' }}>
-                    <td style={{ padding: '7px 12px', fontFamily: 'var(--font-mono)', fontSize: '0.72rem', color: 'var(--text-muted)' }}>{r.matricula}</td>
+                    <td style={{ padding: '7px 12px', fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--text-muted)' }}>{r.matricula}</td>
                     <td style={{ padding: '7px 12px', fontSize: '0.8rem', fontWeight: 500 }}>{r.nome}</td>
                     <td style={{ padding: '7px 12px', fontSize: '0.72rem', color: 'var(--text-secondary)' }}>{r.cargo}</td>
-                    <td style={{ padding: '7px 12px', fontSize: '0.72rem', color: 'var(--text-secondary)' }}>{r.departamento}</td>
-                    <td style={{ padding: '7px 12px', fontSize: '0.72rem', color: 'var(--text-muted)' }}>{r.filial}</td>
-                    <td style={{ padding: '7px 12px', fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--text-muted)' }}>{r.data_admissao}</td>
-                    <td style={{ padding: '7px 12px' }}>
-                      <span style={{ fontSize: '0.65rem', fontWeight: 700, padding: '2px 8px', borderRadius: 99, background: r.situacao?.toLowerCase().includes('ativo') ? 'rgba(16,185,129,0.1)' : 'rgba(107,114,128,0.1)', color: r.situacao?.toLowerCase().includes('ativo') ? '#10b981' : '#6b7280' }}>
-                        {r.situacao || 'N/A'}
-                      </span>
-                    </td>
-                    <td style={{ padding: '7px 12px', fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: '#06b6d4', fontWeight: 600 }}>{r.salario_base ? fmtBRL(r.salario_base) : '—'}</td>
+                    <td style={{ padding: '7px 12px', fontSize: '0.72rem', color: 'var(--text-muted)', maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.empresa}</td>
+                    <td style={{ padding: '7px 12px', fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--text-muted)' }}>{r.data_admissao || '—'}</td>
+                    <td style={{ padding: '7px 12px', fontFamily: 'var(--font-mono)', fontSize: '0.72rem' }}>{fmtBRL(r.salario_base)}</td>
+                    <td style={{ padding: '7px 12px', fontFamily: 'var(--font-mono)', fontSize: '0.72rem', color: '#f59e0b' }}>{fmtBRL(r.salario_bruto)}</td>
+                    <td style={{ padding: '7px 12px', fontFamily: 'var(--font-mono)', fontSize: '0.72rem', color: '#06b6d4', fontWeight: 600 }}>{fmtBRL(r.salario_liquido)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-          <div className="flex items-center justify-between px-4 py-3" style={{ borderTop: '1px solid var(--border)' }}>
-            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Página {page} de {Math.ceil(colabs.total / 50)}</span>
-            <div className="flex gap-2">
-              <button onClick={() => setPage((p: number) => Math.max(1,p-1))} disabled={page===1}
-                style={{ padding: '5px 10px', borderRadius: 7, background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: page===1?'var(--text-muted)':'var(--text-primary)', cursor: page===1?'not-allowed':'pointer' }}>
-                <ChevronLeft size={14} />
-              </button>
-              <button onClick={() => setPage((p: number) => p+1)} disabled={page>=Math.ceil(colabs.total/50)}
-                style={{ padding: '5px 10px', borderRadius: 7, background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: page>=Math.ceil(colabs.total/50)?'var(--text-muted)':'var(--text-primary)', cursor: page>=Math.ceil(colabs.total/50)?'not-allowed':'pointer' }}>
-                <ChevronRight size={14} />
-              </button>
+        </div>
+      )}
+
+      {/* Tabela de ativos */}
+      {tab === 'ativos' && (
+        <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+          {!colabs ? (
+            <div className="flex items-center justify-center py-12" style={{ color: 'var(--text-muted)', fontSize: '0.82rem' }}>
+              <div style={{ width: 18, height: 18, borderRadius: '50%', border: '2px solid var(--border)', borderTopColor: '#06b6d4', animation: 'spin 0.7s linear infinite', marginRight: 10 }} />Carregando…
             </div>
-          </div>
-        </>
+          ) : (
+            <>
+              <div className="overflow-x-auto">
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead><tr>
+                    {['Matrícula','Nome','Cargo','Empresa','Admissão','Sal. Base','Sal. Bruto','Líquido'].map(h => (
+                      <th key={h} style={{ padding: '8px 12px', textAlign: 'left', fontSize: '0.62rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', borderBottom: '1px solid var(--border)', fontWeight: 600, background: 'var(--bg-elevated)', whiteSpace: 'nowrap' }}>{h}</th>
+                    ))}
+                  </tr></thead>
+                  <tbody>
+                    {colabs.items?.map((r: any, i: number) => (
+                      <tr key={i} onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bg-elevated)' }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '' }}>
+                        <td style={{ padding: '7px 12px', fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--text-muted)' }}>{r.matricula}</td>
+                        <td style={{ padding: '7px 12px', fontSize: '0.8rem', fontWeight: 500 }}>{r.nome}</td>
+                        <td style={{ padding: '7px 12px', fontSize: '0.72rem', color: 'var(--text-secondary)' }}>{r.cargo}</td>
+                        <td style={{ padding: '7px 12px', fontSize: '0.72rem', color: 'var(--text-muted)', maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.empresa}</td>
+                        <td style={{ padding: '7px 12px', fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--text-muted)' }}>{r.data_admissao || '—'}</td>
+                        <td style={{ padding: '7px 12px', fontFamily: 'var(--font-mono)', fontSize: '0.72rem' }}>{fmtBRL(r.salario_base)}</td>
+                        <td style={{ padding: '7px 12px', fontFamily: 'var(--font-mono)', fontSize: '0.72rem', color: '#f59e0b' }}>{fmtBRL(r.salario_bruto)}</td>
+                        <td style={{ padding: '7px 12px', fontFamily: 'var(--font-mono)', fontSize: '0.72rem', color: '#06b6d4', fontWeight: 600 }}>{fmtBRL(r.salario_liquido)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="flex items-center justify-between px-4 py-3" style={{ borderTop: '1px solid var(--border)' }}>
+                <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Página {page} de {Math.ceil((colabs.total||1) / 50)}</span>
+                <div className="flex gap-2">
+                  <button onClick={() => setPage((p: number) => Math.max(1,p-1))} disabled={page===1}
+                    style={{ padding: '5px 10px', borderRadius: 7, background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: page===1?'var(--text-muted)':'var(--text-primary)', cursor: page===1?'not-allowed':'pointer' }}>
+                    <ChevronLeft size={14} />
+                  </button>
+                  <button onClick={() => setPage((p: number) => p+1)} disabled={page>=Math.ceil((colabs.total||1)/50)}
+                    style={{ padding: '5px 10px', borderRadius: 7, background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: page>=Math.ceil((colabs.total||1)/50)?'var(--text-muted)':'var(--text-primary)', cursor: page>=Math.ceil((colabs.total||1)/50)?'not-allowed':'pointer' }}>
+                    <ChevronRight size={14} />
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
       )}
     </div>
   )
