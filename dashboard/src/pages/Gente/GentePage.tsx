@@ -201,6 +201,7 @@ export function GentePage() {
   const [itens, setItens]               = useState<any>(null)
   const [colabs, setColabs]             = useState<any>(null)
   const [turnover, setTurnover]         = useState<any>(null)
+  const [filialConf, setFilialConf]     = useState('')
   const [pageNum, setPageNum]           = useState(1)
   const [busca, setBusca]               = useState('')
   const [deleting, setDeleting]         = useState(false)
@@ -249,23 +250,26 @@ export function GentePage() {
   const loadColabs = useCallback(async () => {
     const params: Record<string, string | number> = { page: pageNum, page_size: 50 }
     if (competenciaSel) params.competencia = competenciaSel
-    if (deptoSel)       params.empresa     = deptoSel
+    if (filialConf)     params.empresa     = filialConf
+    else if (deptoSel)  params.empresa     = deptoSel
     if (cargoSel)       params.cargo       = cargoSel
     if (busca)          params.busca       = busca
     try { const data = await GenteAPI.getColaboradoresPorCompetencia(params); setColabs(data) } catch {}
-  }, [busca, pageNum, competenciaSel, deptoSel, cargoSel])
+  }, [busca, pageNum, competenciaSel, deptoSel, cargoSel, filialConf])
 
   const loadTurnover = useCallback(async () => {
     const params: Record<string, string> = {}
     if (competenciaSel) params.competencia_atual = competenciaSel
+    if (filialConf)     params.filial = filialConf
     try { const data = await GenteAPI.getTurnover(params); setTurnover(data) } catch {}
-  }, [competenciaSel])
+  }, [competenciaSel, filialConf])
 
   useEffect(() => { loadCompetencias() }, [])
   useEffect(() => { loadStats() }, [competenciaSel, deptoSel, filialSel, cargoSel, lojasAtivas])
   useEffect(() => {
     if (genteSubSection === 'folha' || genteSubSection === 'overview') loadItens()
     if (genteSubSection === 'colaboradores') { loadColabs(); loadTurnover() }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [genteSubSection, competenciaSel, deptoSel, filialSel, cargoSel, busca, pageNum])
 
   const handleDelete = async () => {
@@ -322,7 +326,7 @@ export function GentePage() {
       case 'folha':
         return <FolhaView itens={itens} page={pageNum} setPage={setPageNum} busca={busca} setBusca={setBusca} />
       case 'colaboradores':
-        return <ColabView colabs={colabs} turnover={turnover} page={pageNum} setPage={setPageNum} busca={busca} setBusca={setBusca} />
+        return <ColabView colabs={colabs} turnover={turnover} page={pageNum} setPage={setPageNum} busca={busca} setBusca={setBusca} filialConf={filialConf} setFilialConf={setFilialConf} filiais={stats?.filtros?.filiais || []} />
       case 'ferias':
         return <FeriasView stats={stats} />
       case 'upload':
@@ -650,7 +654,7 @@ function FolhaView({ itens, page, setPage, busca, setBusca }: any) {
 }
 
 // ── Colaboradores view ────────────────────────────────────────
-function ColabView({ colabs, turnover, page, setPage, busca, setBusca }: any) {
+function ColabView({ colabs, turnover, page, setPage, busca, setBusca, filialConf, setFilialConf, filiais }: any) {
   const [tab, setTab] = useState<'ativos'|'contratados'|'desligados'>('ativos')
 
   const tv = turnover || {}
@@ -664,6 +668,24 @@ function ColabView({ colabs, turnover, page, setPage, busca, setBusca }: any) {
 
   return (
     <div className="flex flex-col gap-4">
+      {/* Seletor de filial (fonte: conferência) */}
+      {filiais?.length > 0 && (
+        <div className="flex gap-2 mb-2 flex-wrap items-center">
+          <span style={{ fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)' }}>Filial:</span>
+          <button onClick={() => setFilialConf('')}
+            style={{ padding: '4px 12px', borderRadius: 8, fontSize: '0.75rem', fontWeight: 600, background: !filialConf ? '#06b6d4' : 'var(--bg-elevated)', color: !filialConf ? '#0a0a0a' : 'var(--text-secondary)', border: `1px solid ${!filialConf ? '#06b6d4' : 'var(--border)'}`, cursor: 'pointer', fontFamily: 'var(--font-body)' }}>
+            CSC (Folha)
+          </button>
+          {filiais.map((f: string) => (
+            <button key={f} onClick={() => setFilialConf(filialConf === f ? '' : f)}
+              style={{ padding: '4px 12px', borderRadius: 8, fontSize: '0.75rem', fontWeight: 600, background: filialConf === f ? '#06b6d4' : 'var(--bg-card)', color: filialConf === f ? '#0a0a0a' : 'var(--text-secondary)', border: `1px solid ${filialConf === f ? '#06b6d4' : 'var(--border)'}`, cursor: 'pointer', fontFamily: 'var(--font-body)', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+              title={f}>
+              {f.length > 22 ? f.slice(0,20)+'…' : f}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Turnover Cards */}
       {tv.competencia_atual && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
