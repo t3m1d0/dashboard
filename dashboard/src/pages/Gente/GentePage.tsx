@@ -266,6 +266,11 @@ export function GentePage() {
     }
   }, [busca, pageNum, competenciaSel, deptoSel, cargoSel, filialConf])
 
+  // Reload colabs when filialConf changes
+  useEffect(() => {
+    if (genteSubSection === 'colaboradores') { loadColabs(); loadTurnover() }
+  }, [filialConf])
+
   const loadTurnover = useCallback(async () => {
     const params: Record<string, string> = {}
     if (competenciaSel) params.competencia_atual = competenciaSel
@@ -282,6 +287,7 @@ export function GentePage() {
   useEffect(() => {
     if (genteSubSection === 'folha' || genteSubSection === 'overview') loadItens()
     if (genteSubSection === 'colaboradores') { loadColabs(); loadTurnover() }
+    if (genteSubSection === 'colaboradores' && (filialConf !== undefined)) { /* dep tracked */ }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [genteSubSection, competenciaSel, deptoSel, filialSel, cargoSel, busca, pageNum])
 
@@ -689,13 +695,18 @@ function ColabView({ colabs, turnover, page, setPage, busca, setBusca, filialCon
             style={{ padding: '4px 12px', borderRadius: 8, fontSize: '0.75rem', fontWeight: 600, background: !filialConf ? '#06b6d4' : 'var(--bg-elevated)', color: !filialConf ? '#0a0a0a' : 'var(--text-secondary)', border: `1px solid ${!filialConf ? '#06b6d4' : 'var(--border)'}`, cursor: 'pointer', fontFamily: 'var(--font-body)' }}>
             CSC (Folha)
           </button>
-          {filiais.map((f: string) => (
-            <button key={f} onClick={() => setFilialConf(filialConf === f ? '' : f)}
-              style={{ padding: '4px 12px', borderRadius: 8, fontSize: '0.75rem', fontWeight: 600, background: filialConf === f ? '#06b6d4' : 'var(--bg-card)', color: filialConf === f ? '#0a0a0a' : 'var(--text-secondary)', border: `1px solid ${filialConf === f ? '#06b6d4' : 'var(--border)'}`, cursor: 'pointer', fontFamily: 'var(--font-body)', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-              title={f}>
-              {f.length > 22 ? f.slice(0,20)+'…' : f}
-            </button>
-          ))}
+          {filiais.map((f: any) => {
+            const nome = typeof f === 'string' ? f : f.filial
+            const n    = typeof f === 'string' ? null : f.n
+            return (
+              <button key={nome} onClick={() => setFilialConf(filialConf === nome ? '' : nome)}
+                style={{ padding: '4px 12px', borderRadius: 8, fontSize: '0.75rem', fontWeight: 600, background: filialConf === nome ? '#06b6d4' : 'var(--bg-card)', color: filialConf === nome ? '#0a0a0a' : 'var(--text-secondary)', border: `1px solid ${filialConf === nome ? '#06b6d4' : 'var(--border)'}`, cursor: 'pointer', fontFamily: 'var(--font-body)', maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                title={nome}>
+                {nome.length > 22 ? nome.slice(0,20)+'…' : nome}
+                {n && <span style={{ fontSize: '0.65rem', marginLeft: 5, opacity: 0.7 }}>({n})</span>}
+              </button>
+            )
+          })}
         </div>
       )}
 
