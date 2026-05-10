@@ -672,6 +672,79 @@ function FolhaView({ itens, page, setPage, busca, setBusca }: any) {
   )
 }
 
+
+// ── Filial Dropdown ───────────────────────────────────────────
+function FilialDropdown({ filiais, filialConf, setFilialConf }: any) {
+  const [open, setOpen]   = useState(false)
+  const [busca, setBusca] = useState('')
+
+  const filtered = (filiais || []).filter((f: any) => {
+    const nome = typeof f === 'string' ? f : f.filial
+    return !busca || nome.toLowerCase().includes(busca.toLowerCase())
+  })
+
+  const label = filialConf
+    ? (filialConf.length > 26 ? filialConf.slice(0, 24) + '…' : filialConf)
+    : 'CSC — Folha de Pgto.'
+
+  return (
+    <div style={{ position: 'relative', marginBottom: 16 }}>
+      <div style={{ fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-muted)', marginBottom: 8 }}>
+        Fonte de dados
+      </div>
+      <button onClick={() => setOpen(!open)}
+        style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 14px', borderRadius: 10, background: filialConf ? 'rgba(6,182,212,0.1)' : 'var(--bg-elevated)', border: `1px solid ${filialConf ? 'rgba(6,182,212,0.4)' : 'var(--border)'}`, color: filialConf ? '#06b6d4' : 'var(--text-secondary)', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-body)', maxWidth: 320 }}>
+        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</span>
+        {filialConf
+          ? <span onClick={e => { e.stopPropagation(); setFilialConf('') }} style={{ fontSize: '0.7rem', marginLeft: 4, opacity: 0.7 }}>✕</span>
+          : <span style={{ fontSize: '0.7rem', marginLeft: 4, opacity: 0.5 }}>▾</span>
+        }
+      </button>
+
+      {open && (
+        <>
+          <div style={{ position: 'fixed', inset: 0, zIndex: 49 }} onClick={() => { setOpen(false); setBusca('') }} />
+          <div style={{ position: 'absolute', top: '110%', left: 0, zIndex: 50, background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 14, boxShadow: 'var(--shadow-lg)', width: 360, maxHeight: 420, display: 'flex', flexDirection: 'column' }}>
+
+            {/* Search */}
+            <div style={{ padding: '10px 12px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
+              <input autoFocus placeholder="Buscar filial..." value={busca} onChange={e => setBusca(e.target.value)}
+                style={{ width: '100%', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 8, padding: '7px 10px', fontSize: '0.8rem', color: 'var(--text-primary)', fontFamily: 'var(--font-body)', outline: 'none' }} />
+            </div>
+
+            {/* CSC option */}
+            <button onClick={() => { setFilialConf(''); setOpen(false); setBusca('') }}
+              style={{ padding: '9px 14px', textAlign: 'left', background: !filialConf ? 'rgba(6,182,212,0.08)' : 'transparent', border: 'none', borderBottom: '1px solid var(--border)', cursor: 'pointer', color: !filialConf ? '#06b6d4' : 'var(--text-secondary)', fontSize: '0.82rem', fontWeight: !filialConf ? 700 : 400, fontFamily: 'var(--font-body)', flexShrink: 0 }}>
+              🏢 CSC — Folha de Pgto.
+            </button>
+
+            {/* Filiais list */}
+            <div style={{ overflowY: 'auto', flex: 1 }}>
+              {filtered.length === 0
+                ? <div style={{ padding: '16px', textAlign: 'center', fontSize: '0.78rem', color: 'var(--text-muted)' }}>Nenhuma filial encontrada</div>
+                : filtered.map((f: any) => {
+                    const nome = typeof f === 'string' ? f : f.filial
+                    const n    = typeof f === 'string' ? null : f.n
+                    const active = filialConf === nome
+                    return (
+                      <button key={nome} onClick={() => { setFilialConf(nome); setOpen(false); setBusca('') }}
+                        style={{ width: '100%', padding: '8px 14px', textAlign: 'left', background: active ? 'rgba(6,182,212,0.08)' : 'transparent', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.03)', cursor: 'pointer', fontFamily: 'var(--font-body)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}
+                        onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.background = 'var(--bg-elevated)' }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = active ? 'rgba(6,182,212,0.08)' : 'transparent' }}>
+                        <span style={{ fontSize: '0.78rem', fontWeight: active ? 600 : 400, color: active ? '#06b6d4' : 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{nome}</span>
+                        {n && <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', flexShrink: 0 }}>{n} colab.</span>}
+                      </button>
+                    )
+                  })
+              }
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
 // ── Colaboradores view ────────────────────────────────────────
 function ColabView({ colabs, turnover, page, setPage, busca, setBusca, filialConf, setFilialConf, filiais }: any) {
   const [tab, setTab] = useState<'ativos'|'contratados'|'desligados'>('ativos')
@@ -687,33 +760,12 @@ function ColabView({ colabs, turnover, page, setPage, busca, setBusca, filialCon
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Filtro de filial — padrão Compras */}
-      {filiais?.length > 0 && (
-        <div className="mb-4">
-          <div style={{ fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-muted)', marginBottom: 10 }}>
-            Fonte de dados
-          </div>
-          <div className="flex gap-1.5 flex-wrap items-center">
-            <button onClick={() => setFilialConf('')}
-              style={{ padding: '5px 14px', borderRadius: 8, fontSize: '0.78rem', fontWeight: 600, background: !filialConf ? '#06b6d4' : 'var(--bg-elevated)', color: !filialConf ? '#0a0a0a' : 'var(--text-secondary)', border: `1px solid ${!filialConf ? '#06b6d4' : 'var(--border)'}`, cursor: 'pointer', fontFamily: 'var(--font-body)' }}>
-              CSC — Folha de Pgto.
-            </button>
-            {filiais.map((f: any) => {
-              const nome = typeof f === 'string' ? f : f.filial
-              const n    = typeof f === 'string' ? null : f.n
-              const active = filialConf === nome
-              return (
-                <button key={nome} onClick={() => setFilialConf(active ? '' : nome)}
-                  title={nome}
-                  style={{ padding: '5px 14px', borderRadius: 8, fontSize: '0.78rem', fontWeight: 600, background: active ? '#06b6d4' : 'var(--bg-card)', color: active ? '#0a0a0a' : 'var(--text-secondary)', border: `1px solid ${active ? '#06b6d4' : 'var(--border)'}`, cursor: 'pointer', fontFamily: 'var(--font-body)', transition: 'all 0.15s', maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {nome.length > 28 ? nome.slice(0, 26) + '…' : nome}
-                  {n && <span style={{ fontSize: '0.65rem', marginLeft: 5, opacity: 0.7 }}>({n})</span>}
-                </button>
-              )
-            })}
-          </div>
-        </div>
-      )}
+      {/* Seletor de filial — dropdown */}
+      <FilialDropdown
+        filiais={filiais}
+        filialConf={filialConf}
+        setFilialConf={setFilialConf}
+      />
 
       {/* Turnover Cards */}
       {tv.competencia_atual && (
