@@ -285,14 +285,18 @@ export function GentePage() {
   }, [])
 
   const loadOverview = useCallback(async () => {
-    const params: Record<string,string> = {}
-    if (competenciaSel) params.competencia = competenciaSel
-    try { const d = await GenteAPI.getOverview(params); setOverview(d) } catch {}
-  }, [competenciaSel])
+    // Overview always loads all data — no competencia filter
+    // (consolidates folha + conferencia regardless of selected month)
+    try { const d = await GenteAPI.getOverview(); setOverview(d) } catch (e) { console.error('overview error', e) }
+  }, [])
+
+  useEffect(() => {
+    loadOverview()  // Load on mount and whenever section changes to overview
+  }, [])
 
   useEffect(() => {
     if (genteSubSection === 'overview') loadOverview()
-  }, [genteSubSection, competenciaSel])
+  }, [genteSubSection])
   useEffect(() => { loadStats() }, [competenciaSel, deptoSel, filialSel, cargoSel, lojasAtivas])
   useEffect(() => {
     if (genteSubSection === 'folha' || genteSubSection === 'overview') loadItens()
