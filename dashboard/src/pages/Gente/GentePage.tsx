@@ -687,26 +687,31 @@ function ColabView({ colabs, turnover, page, setPage, busca, setBusca, filialCon
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Seletor de filial (fonte: conferência) */}
+      {/* Filtro de filial — padrão Compras */}
       {filiais?.length > 0 && (
-        <div className="flex gap-2 mb-2 flex-wrap items-center">
-          <span style={{ fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)' }}>Filial:</span>
-          <button onClick={() => setFilialConf('')}
-            style={{ padding: '4px 12px', borderRadius: 8, fontSize: '0.75rem', fontWeight: 600, background: !filialConf ? '#06b6d4' : 'var(--bg-elevated)', color: !filialConf ? '#0a0a0a' : 'var(--text-secondary)', border: `1px solid ${!filialConf ? '#06b6d4' : 'var(--border)'}`, cursor: 'pointer', fontFamily: 'var(--font-body)' }}>
-            CSC (Folha)
-          </button>
-          {filiais.map((f: any) => {
-            const nome = typeof f === 'string' ? f : f.filial
-            const n    = typeof f === 'string' ? null : f.n
-            return (
-              <button key={nome} onClick={() => setFilialConf(filialConf === nome ? '' : nome)}
-                style={{ padding: '4px 12px', borderRadius: 8, fontSize: '0.75rem', fontWeight: 600, background: filialConf === nome ? '#06b6d4' : 'var(--bg-card)', color: filialConf === nome ? '#0a0a0a' : 'var(--text-secondary)', border: `1px solid ${filialConf === nome ? '#06b6d4' : 'var(--border)'}`, cursor: 'pointer', fontFamily: 'var(--font-body)', maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-                title={nome}>
-                {nome.length > 22 ? nome.slice(0,20)+'…' : nome}
-                {n && <span style={{ fontSize: '0.65rem', marginLeft: 5, opacity: 0.7 }}>({n})</span>}
-              </button>
-            )
-          })}
+        <div className="mb-4">
+          <div style={{ fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-muted)', marginBottom: 10 }}>
+            Fonte de dados
+          </div>
+          <div className="flex gap-1.5 flex-wrap items-center">
+            <button onClick={() => setFilialConf('')}
+              style={{ padding: '5px 14px', borderRadius: 8, fontSize: '0.78rem', fontWeight: 600, background: !filialConf ? '#06b6d4' : 'var(--bg-elevated)', color: !filialConf ? '#0a0a0a' : 'var(--text-secondary)', border: `1px solid ${!filialConf ? '#06b6d4' : 'var(--border)'}`, cursor: 'pointer', fontFamily: 'var(--font-body)' }}>
+              CSC — Folha de Pgto.
+            </button>
+            {filiais.map((f: any) => {
+              const nome = typeof f === 'string' ? f : f.filial
+              const n    = typeof f === 'string' ? null : f.n
+              const active = filialConf === nome
+              return (
+                <button key={nome} onClick={() => setFilialConf(active ? '' : nome)}
+                  title={nome}
+                  style={{ padding: '5px 14px', borderRadius: 8, fontSize: '0.78rem', fontWeight: 600, background: active ? '#06b6d4' : 'var(--bg-card)', color: active ? '#0a0a0a' : 'var(--text-secondary)', border: `1px solid ${active ? '#06b6d4' : 'var(--border)'}`, cursor: 'pointer', fontFamily: 'var(--font-body)', transition: 'all 0.15s', maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {nome.length > 28 ? nome.slice(0, 26) + '…' : nome}
+                  {n && <span style={{ fontSize: '0.65rem', marginLeft: 5, opacity: 0.7 }}>({n})</span>}
+                </button>
+              )
+            })}
+          </div>
         </div>
       )}
 
