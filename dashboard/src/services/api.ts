@@ -267,6 +267,16 @@ export const GenteAPI = {
     return request<any>(`/gente/colaboradores${q}`)
   },
   getImportacoes: () => request<any[]>('/gente/importacoes'),
+  getTurnover: (params?: Record<string, string>) => {
+    const q = params && Object.keys(params).length > 0
+      ? '?' + new URLSearchParams(params).toString() : ''
+    return request<any>(`/gente/turnover${q}`)
+  },
+  getColaboradoresPorCompetencia: (params?: Record<string, string | number>) => {
+    const q = params && Object.keys(params).length > 0
+      ? '?' + new URLSearchParams(params as any).toString() : ''
+    return request<any>(`/gente/colaboradores/por-competencia${q}`)
+  },
   deleteCompetencia: (competencia: string) =>
     request<any>(`/gente/folha/competencia/${encodeURIComponent(competencia)}`, { method: 'DELETE' }),
   importar: (file: File, competencia?: string, loja?: any) => {
