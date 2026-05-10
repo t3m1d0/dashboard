@@ -98,12 +98,25 @@ async def import_lancamentos(
     if len(content) > MAX_BYTES:
         raise HTTPException(413, f"Máximo {settings.MAX_UPLOAD_SIZE_MB}MB")
 
-    # Buscar nome da loja
-    loja_result = await db.execute(
-        select(FinLoja).where(FinLoja.codigo == loja_codigo)
-    )
-    loja = loja_result.scalar_one_or_none()
-    loja_nome = loja.nome if loja else loja_codigo
+    # Buscar nome da loja (tenta tabela lojas primeiro, fallback FinLoja)
+    loja_nome = loja_codigo
+    try:
+        from app.models.loja import Loja
+        loja_result = await db.execute(
+            select(Loja).where(Loja.codigo == loja_codigo)
+        )
+        loja_obj = loja_result.scalar_one_or_none()
+        if loja_obj:
+            loja_nome = loja_obj.nome
+        else:
+            loja_result2 = await db.execute(
+                select(FinLoja).where(FinLoja.codigo == loja_codigo)
+            )
+            loja_obj2 = loja_result2.scalar_one_or_none()
+            if loja_obj2:
+                loja_nome = loja_obj2.nome
+    except Exception:
+        pass
 
     try:
         resultado = await importar_csv(
