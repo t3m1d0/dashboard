@@ -356,7 +356,7 @@ export function GentePage() {
     switch (genteSubSection) {
       case 'overview':
       case 'indicadores':
-        return <OverviewView stats={stats} competencias={competencias} />
+        return <OverviewView stats={stats} overview={overview} competenciaSel={competenciaSel} />
       case 'folha':
         return <FolhaView itens={itens} page={pageNum} setPage={setPageNum} busca={busca} setBusca={setBusca} />
       case 'colaboradores':
@@ -366,7 +366,7 @@ export function GentePage() {
       case 'upload':
         return <UploadView onImport={() => setImportOpen(true)} competencias={competencias} onDelete={handleDelete} deleting={deleting} compSel={competenciaSel} mesSel={mesSel} />
       default:
-        return <OverviewView stats={stats} competencias={competencias} />
+        return <OverviewView stats={stats} overview={overview} competenciaSel={competenciaSel} />
     }
   }
 
