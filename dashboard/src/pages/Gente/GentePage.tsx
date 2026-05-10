@@ -316,6 +316,7 @@ export function GentePage() {
   }
 
   const hasData = !!(stats && stats.kpis && (stats.kpis.total_colaboradores > 0 || stats.kpis.massa_salarial > 0))
+  const hasOverviewData = !!(overview && overview.consolidado && overview.consolidado.total_colaboradores > 0)
 
   // ── Sub-sections ─────────────────────────────────────────
   const renderContent = () => {
@@ -329,7 +330,7 @@ export function GentePage() {
       </div>
     )
 
-    if (!hasData && genteSubSection !== 'upload' && genteSubSection !== 'colaboradores') return (
+    if (!hasData && !hasOverviewData && genteSubSection !== 'upload' && genteSubSection !== 'colaboradores' && genteSubSection !== 'overview') return (
       <div className="flex flex-col items-center justify-center py-24 gap-4 text-center">
         <div style={{ width: 64, height: 64, borderRadius: 16, background: 'rgba(6,182,212,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#06b6d4' }}>
           <Users size={32} />
@@ -380,7 +381,7 @@ export function GentePage() {
             Gente e Gestão — <span style={{ color: '#06b6d4' }}>{SUB_LABELS[genteSubSection] || 'Visão Geral'}</span>
           </h1>
           <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginTop: 3 }}>
-            {hasData ? `${stats.kpis.total_colaboradores} colaboradores · ${competenciaSel || 'todos os períodos'}` : 'Nenhum dado importado'}
+            {hasData ? `${stats.kpis.total_colaboradores} colaboradores CSC · ${competenciaSel || 'todos os períodos'}` : hasOverviewData ? `${overview.consolidado.total_colaboradores} colaboradores · CSC + Filiais` : 'Nenhum dado importado'}
             {lojasAtivas.length > 0 && <span style={{ color: '#06b6d4', marginLeft: 6 }}>· {lojasAtivas.length === 1 ? lojasAtivas[0].nome : lojasAtivas.length + ' lojas'}</span>}
           </p>
         </div>
