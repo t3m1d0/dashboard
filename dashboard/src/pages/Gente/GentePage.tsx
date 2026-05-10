@@ -201,6 +201,7 @@ export function GentePage() {
   const [itens, setItens]               = useState<any>(null)
   const [colabs, setColabs]             = useState<any>(null)
   const [turnover, setTurnover]         = useState<any>(null)
+  const [overview, setOverview]         = useState<any>(null)
   const [filialConf, setFilialConf]     = useState('')
   const [filiaisConf, setFiliaisConf]   = useState<any[]>([])
   const [pageNum, setPageNum]           = useState(1)
@@ -280,9 +281,18 @@ export function GentePage() {
 
   useEffect(() => {
     loadCompetencias()
-    // Load filiais from conferencia
     GenteAPI.getFiliais().then(setFiliaisConf).catch(() => {})
   }, [])
+
+  const loadOverview = useCallback(async () => {
+    const params: Record<string,string> = {}
+    if (competenciaSel) params.competencia = competenciaSel
+    try { const d = await GenteAPI.getOverview(params); setOverview(d) } catch {}
+  }, [competenciaSel])
+
+  useEffect(() => {
+    if (genteSubSection === 'overview') loadOverview()
+  }, [genteSubSection, competenciaSel])
   useEffect(() => { loadStats() }, [competenciaSel, deptoSel, filialSel, cargoSel, lojasAtivas])
   useEffect(() => {
     if (genteSubSection === 'folha' || genteSubSection === 'overview') loadItens()
@@ -457,155 +467,6 @@ export function GentePage() {
 }
 
 // ── Overview / Indicadores ────────────────────────────────────
-function OverviewView({ stats, competencias }: { stats: any; competencias: any[] }) {
-  if (!stats || !stats.kpis) return null
-  const k = stats.kpis
-  const porDepto  = stats.por_departamento || []
-  const porCargo  = stats.por_cargo        || []
-  const compsEvo  = stats.competencias     || []
-
-  return (
-    <>
-      {/* KPIs */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
-        {[
-          { label: 'Colaboradores',   value: fmtNum(k.total_colaboradores), color: '#06b6d4', icon: <Users size={16} /> },
-          { label: 'Massa Salarial',  value: fmtBRL(k.massa_salarial),       color: '#3b82f6', icon: <DollarSign size={16} /> },
-          { label: 'Total Líquido',   value: fmtBRL(k.total_liquido),        color: '#10b981', icon: <TrendingUp size={16} /> },
-          { label: 'Média Líquida',   value: fmtBRL(k.media_liquido || 0),   color: '#8b5cf6', icon: <BarChart3 size={16} /> },
-        ].map(item => (
-          <div key={item.label} className="rounded-2xl p-4 relative overflow-hidden" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-            <div className="absolute top-0 left-0 right-0 rounded-t-2xl" style={{ height: 3, background: item.color }} />
-            <div className="flex items-center justify-between mb-2">
-              <div style={{ fontSize: '0.68rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)' }}>{item.label}</div>
-              <div style={{ color: item.color, opacity: 0.7 }}>{item.icon}</div>
-            </div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '1.35rem', fontWeight: 700, color: item.color }}>{item.value}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Bruto vs Descontos */}
-      <div className="grid grid-cols-2 gap-3 mb-5">
-        {[
-          { label: 'Total Bruto',     value: fmtBRL(k.total_bruto || 0),    color: '#f59e0b' },
-          { label: 'Total Descontos', value: fmtBRL(k.total_descontos || 0), color: '#ef4444' },
-        ].map(item => (
-          <div key={item.label} className="rounded-2xl p-3.5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-            <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginBottom: 4 }}>{item.label}</div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '1.2rem', fontWeight: 700, color: item.color }}>{item.value}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Placeholder encargos */}
-      <div className="grid grid-cols-3 gap-3 mb-5">
-        {[
-          { label: 'FGTS',  value: k.total_fgts ? fmtBRL(k.total_fgts) : '—', color: '#f59e0b' },
-          { label: 'INSS',  value: k.total_inss ? fmtBRL(k.total_inss) : '—', color: '#ef4444' },
-          { label: 'IRRF',  value: k.total_irrf ? fmtBRL(k.total_irrf) : '—', color: '#ec4899' },
-        ].map(item => (
-          <div key={item.label} className="rounded-2xl p-3.5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-            <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginBottom: 4 }}>{item.label}</div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '1.15rem', fontWeight: 700, color: item.color }}>{item.value}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Charts */}
-      <div className="grid grid-cols-12 gap-3.5 mb-5">
-        {/* Por departamento */}
-        <div className="col-span-12 lg:col-span-7 rounded-2xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-          <div style={{ fontSize: '0.85rem', fontWeight: 600, marginBottom: 3 }}>Massa Salarial por Departamento</div>
-          <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginBottom: 14 }}>Top 10</div>
-          <ResponsiveContainer width="100%" height={280}>
-            <BarChart data={porDepto.slice(0,10)} layout="vertical" margin={{ right: 10, left: 10 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" horizontal={false} />
-              <XAxis type="number" tick={{ fontSize: 10, fill: 'var(--text-muted)' }} tickFormatter={v => fmtBRL(v)} axisLine={false} tickLine={false} />
-              <YAxis type="category" dataKey="nome" tick={{ fontSize: 10, fill: 'var(--text-secondary)' }} axisLine={false} tickLine={false} width={120}
-                tickFormatter={(v: string) => v?.length > 16 ? v.slice(0,14)+'…' : v} />
-              <Tooltip contentStyle={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12 }}
-                formatter={(v: number, name: string) => [fmtBRL(v), name === 'massa' ? 'Massa Salarial' : 'Líquido']} />
-              <Bar dataKey="massa" fill="#06b6d4" radius={[0,4,4,0]}>
-                {porDepto.slice(0,10).map((_: any, i: number) => (
-                  <Cell key={i} fill={`rgba(6,182,212,${0.9 - i * 0.06})`} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-
-        {/* Por filial */}
-        <div className="col-span-12 lg:col-span-5 rounded-2xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-          <div style={{ fontSize: '0.85rem', fontWeight: 600, marginBottom: 3 }}>Colaboradores por Filial</div>
-          <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginBottom: 14 }}>Distribuição</div>
-          <ResponsiveContainer width="100%" height={280}>
-            <PieChart>
-              <Pie data={(stats.por_filial || []).slice(0,8)} dataKey="colab" nameKey="nome"
-                cx="50%" cy="50%" innerRadius={55} outerRadius={95} paddingAngle={3}>
-                {(stats.por_filial || []).slice(0,8).map((_: any, i: number) => (
-                  <Cell key={i} fill={CORES[i % CORES.length]} />
-                ))}
-              </Pie>
-              <Tooltip contentStyle={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 11 }}
-                formatter={(v: number) => [v, 'Colaboradores']} />
-              <Legend iconSize={10} wrapperStyle={{ fontSize: '0.68rem', color: 'var(--text-secondary)' }}
-                formatter={(v: string) => v?.length > 18 ? v.slice(0,16)+'…' : v} />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
-      {/* Evolução mensal */}
-      {compsEvo.length > 1 && (
-        <div className="rounded-2xl p-5 mb-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-          <div style={{ fontSize: '0.85rem', fontWeight: 600, marginBottom: 3 }}>Evolução da Massa Salarial</div>
-          <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginBottom: 14 }}>Por competência</div>
-          <ResponsiveContainer width="100%" height={200}>
-            <LineChart data={[...compsEvo].reverse()} margin={{ right: 10, left: 10 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-              <XAxis dataKey="mes_nome" tick={{ fontSize: 10, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 10, fill: 'var(--text-muted)' }} tickFormatter={v => fmtBRL(v)} axisLine={false} tickLine={false} />
-              <Tooltip contentStyle={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 11 }}
-                formatter={(v: number) => [fmtBRL(v), 'Massa Salarial']} />
-              <Line type="monotone" dataKey="massa" stroke="#06b6d4" strokeWidth={2} dot={{ fill: '#06b6d4', r: 4 }} />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      )}
-
-      {/* Top cargos */}
-      <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-        <div className="px-5 py-4" style={{ borderBottom: '1px solid var(--border)' }}>
-          <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>Distribuição por Cargo</div>
-        </div>
-        <div className="overflow-x-auto">
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr>
-                {['Cargo','Colaboradores','Massa Salarial','Média Salarial'].map(h => (
-                  <th key={h} style={{ padding: '8px 14px', textAlign: 'left', fontSize: '0.62rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', borderBottom: '1px solid var(--border)', fontWeight: 600, background: 'var(--bg-elevated)', whiteSpace: 'nowrap' }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {porCargo.map((c: any, i: number) => (
-                <tr key={i} onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bg-elevated)' }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '' }}>
-                  <td style={{ padding: '8px 14px', fontSize: '0.8rem' }}>{c.nome}</td>
-                  <td style={{ padding: '8px 14px', fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: '#06b6d4' }}>{c.colab}</td>
-                  <td style={{ padding: '8px 14px', fontFamily: 'var(--font-mono)', fontSize: '0.75rem' }}>{fmtBRL(c.massa)}</td>
-                  <td style={{ padding: '8px 14px', fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: '#8b5cf6' }}>{fmtBRL(c.media)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </>
-  )
-}
-
 // ── Folha view ────────────────────────────────────────────────
 function FolhaView({ itens, page, setPage, busca, setBusca }: any) {
   return (
@@ -987,4 +848,182 @@ function UploadView({ onImport, competencias, onDelete, deleting, compSel, mesSe
       )}
     </div>
   )
+}// ── Overview view ─────────────────────────────────────────────
+function OverviewView({ stats, overview, competenciaSel }: any) {
+  const fk = overview?.folha?.kpis || {}
+  const ck = overview?.conferencia?.kpis || {}
+  const cv = overview?.consolidado || {}
+  const porFilial = overview?.conferencia?.por_filial || []
+  const porCargo  = overview?.conferencia?.por_cargo || []
+  const compsFolha = overview?.folha?.competencias || []
+  const compsConf  = overview?.conferencia?.competencias || []
+
+  const hasOverview = !!(overview && (cv.total_colaboradores > 0))
+
+  if (!hasOverview) return (
+    <div className="flex flex-col items-center justify-center py-20 gap-3 text-center">
+      <div style={{ width: 56, height: 56, borderRadius: 16, background: 'rgba(6,182,212,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#06b6d4' }}>
+        <Users size={28} />
+      </div>
+      <div style={{ fontSize: '1rem', fontWeight: 700 }}>Nenhum dado ainda</div>
+      <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Importe a Folha de Pagamento e/ou PDFs de Conferência de Folha.</div>
+    </div>
+  )
+
+  const Section = ({ title, color, children }: any) => (
+    <div className="mb-6">
+      <div className="flex items-center gap-2 mb-3">
+        <div style={{ width: 3, height: 18, borderRadius: 2, background: color }} />
+        <span style={{ fontSize: '0.88rem', fontWeight: 700, color }}>{title}</span>
+      </div>
+      {children}
+    </div>
+  )
+
+  const KpiCard = ({ label, value, sub, color, bold }: any) => (
+    <div className="rounded-2xl p-4 relative overflow-hidden" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+      <div className="absolute top-0 left-0 right-0 rounded-t-2xl" style={{ height: 3, background: color }} />
+      <div style={{ fontSize: '0.62rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', marginBottom: 4 }}>{label}</div>
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: bold ? '1.5rem' : '1.1rem', fontWeight: 700, color }}>{value}</div>
+      {sub && <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)', marginTop: 3 }}>{sub}</div>}
+    </div>
+  )
+
+  return (
+    <div className="flex flex-col gap-2">
+
+      {/* ── CONSOLIDADO ── */}
+      <Section title="Consolidado — CSC + Filiais" color="#06b6d4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
+          <KpiCard label="Total Colaboradores" value={cv.total_colaboradores?.toLocaleString('pt-BR')} color="#06b6d4" bold />
+          <KpiCard label="Total Proventos"     value={fmtBRL(cv.total_proventos)}  color="#10b981" bold />
+          <KpiCard label="Total Descontos"     value={fmtBRL(cv.total_descontos)}  color="#ef4444" bold />
+          <KpiCard label="Total Líquido"       value={fmtBRL(cv.total_liquido)}    color="#3b82f6" bold />
+        </div>
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+          <KpiCard label="INSS Total"           value={fmtBRL(cv.total_inss)}          color="#f59e0b" />
+          <KpiCard label="VT Total"             value={fmtBRL(cv.total_vt)}            color="#8b5cf6" />
+          <KpiCard label="Adiantamento Sal."    value={fmtBRL(cv.total_adiantamento)}  color="#3b82f6" />
+          <KpiCard label={`Vale Func. OS (${cv.qtd_vale_func_os} OS)`} value={fmtBRL(cv.total_vale_func_os)} color="#06b6d4" />
+          <KpiCard label="Liquidez Loja"        value={fmtBRL(cv.liquidez_loja)}       color="#10b981" />
+        </div>
+      </Section>
+
+      {/* ── FOLHA DE PAGAMENTO (CSC) ── */}
+      {fk.total_colaboradores > 0 && (
+        <Section title="Folha de Pagamento — CSC" color="#8b5cf6">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
+            <KpiCard label="Colaboradores CSC"  value={fk.total_colaboradores?.toLocaleString('pt-BR')} color="#8b5cf6" />
+            <KpiCard label="Massa Salarial"     value={fmtBRL(fk.massa_salarial)}   color="#10b981" />
+            <KpiCard label="Total Bruto"        value={fmtBRL(fk.total_bruto)}      color="#f59e0b" />
+            <KpiCard label="Total Líquido"      value={fmtBRL(fk.total_liquido)}    color="#3b82f6" />
+          </div>
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+            <KpiCard label="Total Descontos"    value={fmtBRL(fk.total_descontos)}  color="#ef4444" />
+            <KpiCard label="Média Salário Base" value={fmtBRL(fk.media_salario)}    color="#6b7280" />
+            <KpiCard label="Média Líquido"      value={fmtBRL(fk.media_liquido)}    color="#6b7280" />
+          </div>
+          {/* Histórico competências folha */}
+          {compsFolha.length > 1 && (
+            <div className="mt-3 rounded-2xl overflow-hidden" style={{ border: '1px solid var(--border)' }}>
+              <div style={{ padding: '10px 14px', fontSize: '0.78rem', fontWeight: 600, borderBottom: '1px solid var(--border)', background: 'var(--bg-elevated)' }}>Histórico por Competência</div>
+              <div className="overflow-x-auto">
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead><tr>
+                    {['Competência','Colaboradores','Massa Salarial','Total Bruto','Líquido'].map(h => (
+                      <th key={h} style={{ padding: '7px 12px', textAlign: 'left', fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', fontWeight: 600, background: 'var(--bg-elevated)', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap' }}>{h}</th>
+                    ))}
+                  </tr></thead>
+                  <tbody>
+                    {compsFolha.map((c: any) => (
+                      <tr key={c.competencia} onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bg-elevated)' }} onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '' }}>
+                        <td style={{ padding: '7px 12px', fontFamily: 'var(--font-mono)', fontSize: '0.78rem', fontWeight: 600 }}>{c.competencia}</td>
+                        <td style={{ padding: '7px 12px', fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: '#8b5cf6' }}>{c.colab}</td>
+                        <td style={{ padding: '7px 12px', fontFamily: 'var(--font-mono)', fontSize: '0.75rem' }}>{fmtBRL(c.massa)}</td>
+                        <td style={{ padding: '7px 12px', fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: '#f59e0b' }}>{fmtBRL(c.bruto)}</td>
+                        <td style={{ padding: '7px 12px', fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: '#3b82f6', fontWeight: 600 }}>{fmtBRL(c.liquido)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </Section>
+      )}
+
+      {/* ── CONFERÊNCIA DE FOLHA (FILIAIS) ── */}
+      {ck.total_funcionarios > 0 && (
+        <Section title="Conferência de Folha — Filiais" color="#f59e0b">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
+            <KpiCard label="Colaboradores Filiais" value={ck.total_funcionarios?.toLocaleString('pt-BR')} color="#f59e0b" />
+            <KpiCard label="Total Proventos"        value={fmtBRL(ck.total_proventos)}   color="#10b981" />
+            <KpiCard label="Total Descontos"        value={fmtBRL(ck.total_descontos)}   color="#ef4444" />
+            <KpiCard label="Total Líquido"          value={fmtBRL(ck.total_liquido)}     color="#3b82f6" />
+          </div>
+
+          {/* Por filial */}
+          {porFilial.length > 0 && (
+            <div className="rounded-2xl overflow-hidden mt-3" style={{ border: '1px solid var(--border)' }}>
+              <div style={{ padding: '10px 14px', fontSize: '0.78rem', fontWeight: 600, borderBottom: '1px solid var(--border)', background: 'var(--bg-elevated)' }}>Por Filial</div>
+              <div className="overflow-x-auto">
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead><tr>
+                    {['Filial','Colab.','Proventos','Descontos','INSS','Adiant. Sal.','Líquido','Liquidez Loja'].map(h => (
+                      <th key={h} style={{ padding: '7px 12px', textAlign: 'left', fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', fontWeight: 600, background: 'var(--bg-elevated)', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap' }}>{h}</th>
+                    ))}
+                  </tr></thead>
+                  <tbody>
+                    {porFilial.map((f: any) => (
+                      <tr key={f.filial} onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bg-elevated)' }} onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '' }}>
+                        <td style={{ padding: '7px 12px', fontSize: '0.78rem', fontWeight: 500, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.filial}</td>
+                        <td style={{ padding: '7px 12px', fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: '#f59e0b', textAlign: 'center' }}>{f.funcionarios}</td>
+                        <td style={{ padding: '7px 12px', fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: '#10b981' }}>{fmtBRL(f.proventos)}</td>
+                        <td style={{ padding: '7px 12px', fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: '#ef4444' }}>{fmtBRL(f.descontos)}</td>
+                        <td style={{ padding: '7px 12px', fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: '#f59e0b' }}>{fmtBRL(f.inss)}</td>
+                        <td style={{ padding: '7px 12px', fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: '#3b82f6' }}>{fmtBRL(f.adiantamento)}</td>
+                        <td style={{ padding: '7px 12px', fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: '#06b6d4', fontWeight: 600 }}>{fmtBRL(f.liquido)}</td>
+                        <td style={{ padding: '7px 12px', fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: '#10b981' }}>{fmtBRL(f.liquidez_loja)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Por cargo */}
+          {porCargo.length > 0 && (
+            <div className="rounded-2xl overflow-hidden mt-3" style={{ border: '1px solid var(--border)' }}>
+              <div style={{ padding: '10px 14px', fontSize: '0.78rem', fontWeight: 600, borderBottom: '1px solid var(--border)', background: 'var(--bg-elevated)' }}>Por Cargo — Filiais</div>
+              <div className="overflow-x-auto">
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead><tr>
+                    {['Cargo','Colab.','Proventos','Descontos','INSS','Adiant. Sal.','Líquido'].map(h => (
+                      <th key={h} style={{ padding: '7px 12px', textAlign: 'left', fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', fontWeight: 600, background: 'var(--bg-elevated)', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap' }}>{h}</th>
+                    ))}
+                  </tr></thead>
+                  <tbody>
+                    {porCargo.map((c: any) => (
+                      <tr key={c.cargo} onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bg-elevated)' }} onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '' }}>
+                        <td style={{ padding: '7px 12px', fontSize: '0.78rem', fontWeight: 500 }}>{c.cargo}</td>
+                        <td style={{ padding: '7px 12px', fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: '#f59e0b', textAlign: 'center' }}>{c.n}</td>
+                        <td style={{ padding: '7px 12px', fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: '#10b981' }}>{fmtBRL(c.proventos)}</td>
+                        <td style={{ padding: '7px 12px', fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: '#ef4444' }}>{fmtBRL(c.descontos || 0)}</td>
+                        <td style={{ padding: '7px 12px', fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: '#f59e0b' }}>{fmtBRL(c.inss || 0)}</td>
+                        <td style={{ padding: '7px 12px', fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: '#3b82f6' }}>{fmtBRL(c.adiant_sal || 0)}</td>
+                        <td style={{ padding: '7px 12px', fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: '#06b6d4', fontWeight: 600 }}>{fmtBRL(c.liquido || 0)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </Section>
+      )}
+    </div>
+  )
 }
+
+// ── Formatadores ──────────────────────────────────────────────
