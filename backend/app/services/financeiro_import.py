@@ -26,14 +26,32 @@ CSV_MAP = {
 }
 
 SINONIMOS = {
+    # Colunas do formato Muniz (a_pagar.csv, recebidas.csv etc)
+    'cod': 'codigo', 'seq': 'codigo',
+    'fornecedor': 'fornecedor', 'nome_fornecedor': 'fornecedor',
+    'cliente': 'cliente', 'nome_cliente': 'cliente',
+    'parcela': 'parcela',
+    'observacao': 'observacao', 'obs': 'observacao',
+    'competencia': 'dt_competencia', 'dt_competencia': 'dt_competencia',
+    'vencimento': 'dt_vencimento', 'dt_vencimento': 'dt_vencimento',
+    'lancamento': 'dt_lancamento', 'dt_lancamento': 'dt_lancamento',
+    'recebimento': 'dt_recebimento', 'dt_recebimento': 'dt_recebimento',
+    'pagamento': 'dt_pagamento', 'dt_pagamento': 'dt_pagamento',
+    'valor_r': 'valor', 'valor_rs': 'valor', 'valor_r_': 'valor',
+    'plano_de_pagamento': 'plano', 'plano': 'plano', 'forma_pagamento': 'plano',
+    'cadastrado_por': 'descricao', 'ultima_modificacao': 'observacao',
+    'cod_lancamento': 'codigo', 'numero': 'codigo',
+    'historico': 'descricao', 'descricao': 'descricao',
+    'conta': 'conta', 'centro_custo': 'centro_custo',
+    'identificacao': 'identificacao', 'num_documento': 'num_documento',
     'codigo': 'codigo', 'codigo_titulo': 'codigo',
     'cliente': 'cliente', 'nome_cliente': 'cliente', 'razao_social': 'cliente',
     'fornecedor': 'fornecedor', 'nome_fornecedor': 'fornecedor',
     'valor_r': 'valor', 'vlr': 'valor', 'vl': 'valor', 'valor_original': 'valor',
     'valor_liquido': 'valor', 'vlr_doc': 'valor', 'valor_pago': 'valor',
-    'plano': 'plano', 'forma_pagamento': 'plano', 'forma': 'plano',
+    'plano': 'plano', 'forma_pagamento': 'plano', 'forma': 'plano', 'plano_de_pagamento': 'plano',
     'parcela': 'parcela', 'installment': 'parcela',
-    'data_lancamento': 'dt_lancamento', 'dt_lanc': 'dt_lancamento', 'data': 'dt_lancamento',
+    'data_lancamento': 'dt_lancamento', 'dt_lanc': 'dt_lancamento', 'data': 'dt_lancamento', 'lancamento': 'dt_lancamento',
     'data_vencimento': 'dt_vencimento', 'dt_venc': 'dt_vencimento', 'vencimento': 'dt_vencimento',
     'data_recebimento': 'dt_recebimento', 'dt_rec': 'dt_recebimento',
     'data_pagamento': 'dt_pagamento', 'dt_pag': 'dt_pagamento', 'dt_baixa': 'dt_pagamento',
@@ -57,9 +75,12 @@ NOME_TIPO_MAP = {
 
 
 def _norm_key(k: str) -> str:
-    """Normaliza chave de coluna — idêntico ao normKey() do HTML."""
-    s = str(k).lower()
-    s = ''.join(c if c.isascii() else '' for c in s)
+    """Normaliza chave de coluna — converte acentos e normaliza."""
+    import unicodedata
+    s = str(k).lower().strip()
+    # Converter acentos para ASCII
+    s = unicodedata.normalize('NFD', s)
+    s = ''.join(c for c in s if unicodedata.category(c) != 'Mn')
     s = re.sub(r'[^a-z0-9]', '_', s)
     s = re.sub(r'_+', '_', s).strip('_')
     return s
@@ -81,22 +102,26 @@ def detectar_tipo_pelo_nome(filename: str) -> Optional[str]:
 
 
 def _mapear_colunas(cols: list) -> dict:
-    """Mapeia colunas do CSV para campos internos — mesmo algoritmo do HTML."""
+    """Mapeia colunas do CSV para campos internos."""
     mapeamento = {}
+    used_targets = set()
     for col in cols:
         if not col or str(col) == 'nan':
             continue
+        target = None
         if col in CSV_MAP:
-            mapeamento[col] = CSV_MAP[col]
-            continue
-        norm = _norm_key(col)
-        if norm in SINONIMOS:
-            mapeamento[col] = SINONIMOS[norm]
-            continue
-        # Parcial
-        partial = next((s for s in SINONIMOS if norm.find(s) >= 0 or s.find(norm) >= 0), None)
-        if partial:
-            mapeamento[col] = SINONIMOS[partial]
+            target = CSV_MAP[col]
+        else:
+            norm = _norm_key(col)
+            if norm in SINONIMOS:
+                target = SINONIMOS[norm]
+            else:
+                partial = next((s for s in SINONIMOS if norm.find(s) >= 0 or s.find(norm) >= 0), None)
+                if partial:
+                    target = SINONIMOS[partial]
+        if target and target not in used_targets:
+            mapeamento[col] = target
+            used_targets.add(target)
     return mapeamento
 
 
@@ -130,16 +155,70 @@ def _hash_row(data: dict) -> str:
 
 def _read_file(content: bytes, filename: str) -> pd.DataFrame:
     fname = (filename or '').lower()
+
     if fname.endswith('.csv'):
-        for enc in ['utf-8-sig', 'latin-1', 'utf-8', 'cp1252']:
+        for enc in ['latin-1', 'utf-8-sig', 'utf-8', 'cp1252']:
             try:
-                return pd.read_csv(io.BytesIO(content), sep=None, engine='python',
-                                   encoding=enc, dtype=str, encoding_errors='replace')
+                text = content.decode(enc, errors='replace')
+                lines = text.splitlines()
+
+                # Detectar separador
+                sep = ','
+                for line in lines[:10]:
+                    if line.count(';') >= 3:
+                        sep = ';'
+                        break
+
+                # Detectar linha do header (pula linhas de título)
+                header_line = 0
+                for i, line in enumerate(lines[:10]):
+                    stripped = line.strip().strip(sep)
+                    if not stripped:
+                        continue
+                    fields = [f.strip() for f in stripped.split(sep)]
+                    non_empty = sum(1 for f in fields
+                        if f and not f.replace('/','').replace('-','').replace(' ','').isdigit())
+                    if non_empty >= 3 and len(fields) >= 3:
+                        header_line = i
+                        break
+
+                df = pd.read_csv(
+                    io.BytesIO(content), sep=sep, skiprows=header_line,
+                    encoding=enc, dtype=str, engine='python',
+                    on_bad_lines='skip'
+                )
+                # Remove colunas e linhas vazias
+                df = df.dropna(axis=1, how='all')
+                df = df.loc[:, ~df.columns.str.startswith('Unnamed')]
+                df = df.dropna(how='all').reset_index(drop=True)
+                if len(df) > 0 and len(df.columns) >= 2:
+                    return df
             except Exception:
                 continue
         raise ValueError("Não foi possível ler o CSV.")
-    else:
-        return pd.read_excel(io.BytesIO(content), dtype=str)
+
+    # Excel (.xlsx / .xls)
+    try:
+        return pd.read_excel(io.BytesIO(content), engine='openpyxl', dtype=str)
+    except Exception:
+        pass
+    try:
+        import tempfile, subprocess, os
+        with tempfile.TemporaryDirectory() as tmpdir:
+            xls_path = os.path.join(tmpdir, 'input.xls')
+            with open(xls_path, 'wb') as f:
+                f.write(content)
+            subprocess.run(['libreoffice', '--headless', '--convert-to', 'xlsx',
+                '--outdir', tmpdir, xls_path], capture_output=True, timeout=60)
+            xlsx_files = [f for f in os.listdir(tmpdir) if f.endswith('.xlsx')]
+            if xlsx_files:
+                return pd.read_excel(os.path.join(tmpdir, xlsx_files[0]), dtype=str)
+    except Exception:
+        pass
+    try:
+        return pd.read_excel(io.BytesIO(content), engine='xlrd', dtype=str)
+    except Exception as e:
+        raise ValueError(f"Formato não suportado: {e}")
 
 
 async def importar_csv(
