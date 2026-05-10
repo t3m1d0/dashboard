@@ -144,16 +144,19 @@ export function FinanceiroPage() {
   const [itens, setItens]     = useState<any>(null)
   const [pageNum, setPageNum] = useState(1)
   const [busca, setBusca]     = useState('')
+  const [filialSel, setFilialSel] = useState('')
   const periodoSel = mesSel > 0 ? `${anoSel}-${String(mesSel).padStart(2,'0')}` : ''
 
   const buildParams = useCallback(() => {
     const p: Record<string,string> = {}
     if (periodoSel) p.periodo = periodoSel
     if (tipoSel) p.tipo = tipoSel
-    if (lojasAtivas.length === 1) p.loja_codigo = lojasAtivas[0].codigo
+    // filialSel sobrescreve lojasAtivas quando selecionada
+    if (filialSel) p.loja_codigo = filialSel
+    else if (lojasAtivas.length === 1) p.loja_codigo = lojasAtivas[0].codigo
     else if (lojasAtivas.length > 1) p.lojas = lojasAtivas.map((l:any) => l.codigo).join('||')
     return p
-  }, [periodoSel, tipoSel, lojasAtivas])
+  }, [periodoSel, tipoSel, lojasAtivas, filialSel])
 
   const loadStats = useCallback(async () => {
     setLoading(true)
@@ -173,16 +176,17 @@ export function FinanceiroPage() {
     if (!tipo) return
     const p: Record<string, string|number> = { page: pageNum, page_size: 50 }
     if (periodoSel) p.periodo = periodoSel
-    if (lojasAtivas.length === 1) p.loja_codigo = lojasAtivas[0].codigo
+    if (filialSel) p.loja_codigo = filialSel
+    else if (lojasAtivas.length === 1) p.loja_codigo = lojasAtivas[0].codigo
     if (busca) p.busca = busca
     try { const d = await FinanceiroAPI.getItens(tipo, p); setItens(d) } catch {}
   }, [tipoSel, financeiroSubSection, periodoSel, lojasAtivas, pageNum, busca])
 
-  useEffect(() => { loadStats() }, [mesSel, anoSel, tipoSel, lojasAtivas])
+  useEffect(() => { loadStats() }, [mesSel, anoSel, tipoSel, lojasAtivas, filialSel])
   useEffect(() => {
     if (tipoSel || financeiroSubSection === 'recpag') loadItens()
     else setItens(null)
-  }, [financeiroSubSection, mesSel, anoSel, tipoSel, lojasAtivas, busca, pageNum])
+  }, [financeiroSubSection, mesSel, anoSel, tipoSel, lojasAtivas, busca, pageNum, filialSel])
 
   const periodos = stats?.periodos || []
   const kpis = stats?.kpis || {}
@@ -201,7 +205,10 @@ export function FinanceiroPage() {
         <div>
           <h1 style={{ fontSize: '1.35rem', fontWeight: 700 }}>Financeiro — <span style={{ color: '#cc0000' }}>{SUB_LABELS[financeiroSubSection] || 'Visão Geral'}</span></h1>
           <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginTop: 3 }}>
-            {lojasAtivas.length === 0 ? 'Todas as lojas' : lojasAtivas.length === 1 ? lojasAtivas[0].nome : `${lojasAtivas.length} lojas selecionadas`}
+            {filialSel ? (stats?.lojas || []).find((l:any) => l.codigo === filialSel)?.nome || filialSel
+              : lojasAtivas.length === 0 ? 'Todas as lojas'
+              : lojasAtivas.length === 1 ? lojasAtivas[0].nome
+              : `${lojasAtivas.length} lojas selecionadas`}
           </p>
         </div>
         <button onClick={() => setImportOpen(true)} className="flex items-center gap-2 px-3.5 py-2 rounded-xl"
@@ -223,6 +230,12 @@ export function FinanceiroPage() {
                 {MESES[mes]}
               </button>
             })}
+            {mesSel > 0 && (
+              <button onClick={() => setMesSel(0)}
+                style={{ marginLeft: 'auto', padding: '5px 12px', borderRadius: 8, fontSize: '0.72rem', fontWeight: 600, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', color: '#f87171', cursor: 'pointer', fontFamily: 'var(--font-body)' }}>
+                ✕ Limpar {MESES[mesSel]}
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -237,6 +250,24 @@ export function FinanceiroPage() {
         ))}
         {tipoSel && <button onClick={() => setTipoSel('')} style={{ ...SEL, color: '#f87171', borderColor: 'rgba(239,68,68,0.3)' }}><X size={12} style={{ display:'inline', marginRight:4 }} />Limpar</button>}
       </div>
+
+      {/* Filtro por filial */}
+      {(stats?.lojas?.length > 1) && (
+        <div className="flex gap-2 mb-4 flex-wrap items-center">
+          <span style={{ fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)' }}>Filial:</span>
+          <button onClick={() => setFilialSel('')}
+            style={{ padding: '4px 12px', borderRadius: 8, fontSize: '0.75rem', fontWeight: 600, background: !filialSel ? '#cc0000' : 'var(--bg-elevated)', color: !filialSel ? '#fff' : 'var(--text-secondary)', border: `1px solid ${!filialSel ? '#cc0000' : 'var(--border)'}`, cursor: 'pointer', fontFamily: 'var(--font-body)' }}>
+            Todas
+          </button>
+          {(stats?.lojas || []).map((l: any) => (
+            <button key={l.codigo} onClick={() => setFilialSel(filialSel === l.codigo ? '' : l.codigo)}
+              style={{ padding: '4px 12px', borderRadius: 8, fontSize: '0.75rem', fontWeight: 600, background: filialSel === l.codigo ? '#cc0000' : 'var(--bg-card)', color: filialSel === l.codigo ? '#fff' : 'var(--text-secondary)', border: `1px solid ${filialSel === l.codigo ? '#cc0000' : 'var(--border)'}`, cursor: 'pointer', fontFamily: 'var(--font-body)', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+              title={l.nome || l.codigo}>
+              {(l.nome || l.codigo)?.length > 22 ? (l.nome || l.codigo).slice(0,20)+'…' : (l.nome || l.codigo)}
+            </button>
+          ))}
+        </div>
+      )}
 
       {loading ? (
         <div className="flex items-center justify-center py-24">
