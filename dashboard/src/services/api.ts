@@ -272,6 +272,12 @@ export const GenteAPI = {
       ? '?' + new URLSearchParams(params).toString() : ''
     return request<any>(`/gente/turnover${q}`)
   },
+  getFiliais: () => request<any[]>('/gente/colaboradores/filiais'),
+  getCadastro: (params?: Record<string, string | number>) => {
+    const q = params && Object.keys(params).length > 0
+      ? '?' + new URLSearchParams(params as any).toString() : ''
+    return request<any>(`/gente/colaboradores/cadastro${q}`)
+  },
   getColaboradoresPorCompetencia: (params?: Record<string, string | number>) => {
     const q = params && Object.keys(params).length > 0
       ? '?' + new URLSearchParams(params as any).toString() : ''
