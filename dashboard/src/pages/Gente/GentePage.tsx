@@ -319,7 +319,7 @@ export function GentePage() {
       </div>
     )
 
-    if (!hasData && genteSubSection !== 'upload') return (
+    if (!hasData && genteSubSection !== 'upload' && genteSubSection !== 'colaboradores') return (
       <div className="flex flex-col items-center justify-center py-24 gap-4 text-center">
         <div style={{ width: 64, height: 64, borderRadius: 16, background: 'rgba(6,182,212,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#06b6d4' }}>
           <Users size={32} />
