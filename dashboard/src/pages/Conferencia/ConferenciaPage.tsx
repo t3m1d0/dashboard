@@ -417,9 +417,11 @@ export function ConferenciaPage() {
                       onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '' }}>
                       <td style={{ padding: '8px 14px', fontSize: '0.8rem' }}>{c.cargo}</td>
                       <td style={{ padding: '8px 14px', fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: '#f59e0b', textAlign: 'center' }}>{c.n}</td>
-                      <td style={{ padding: '8px 14px', fontFamily: 'var(--font-mono)', fontSize: '0.75rem' }}>{fmtBRL(c.proventos)}</td>
-                      <td style={{ padding: '8px 14px', fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: '#8b5cf6' }}>{fmtBRL(c.media)}</td>
-                      <td style={{ padding: '8px 14px', fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: '#3b82f6' }}>{fmtBRL(c.liquido)}</td>
+                      <td style={{ padding: '8px 14px', fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: '#10b981' }}>{fmtBRL(c.proventos)}</td>
+                      <td style={{ padding: '8px 14px', fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: '#ef4444' }}>{fmtBRL(c.descontos || 0)}</td>
+                      <td style={{ padding: '8px 14px', fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: '#f59e0b' }}>{fmtBRL(c.inss || 0)}</td>
+                      <td style={{ padding: '8px 14px', fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: '#3b82f6' }}>{fmtBRL(c.adiant_sal || 0)}</td>
+                      <td style={{ padding: '8px 14px', fontFamily: 'var(--font-mono)', fontSize: '0.75rem', fontWeight: 600, color: '#06b6d4' }}>{fmtBRL(c.liquido || 0)}</td>
                     </tr>
                   ))}
                 </tbody>
