@@ -266,6 +266,10 @@ export const GenteAPI = {
       ? '?' + new URLSearchParams(params as any).toString() : ''
     return request<any>(`/gente/colaboradores${q}`)
   },
+  getOverview: (params?: Record<string, string>) => {
+    const q = params && Object.keys(params).length > 0 ? '?' + new URLSearchParams(params).toString() : ''
+    return request<any>(`/gente/overview${q}`)
+  },
   getImportacoes: () => request<any[]>('/gente/importacoes'),
   getTurnover: (params?: Record<string, string>) => {
     const q = params && Object.keys(params).length > 0
