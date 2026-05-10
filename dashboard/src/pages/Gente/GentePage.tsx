@@ -202,6 +202,7 @@ export function GentePage() {
   const [colabs, setColabs]             = useState<any>(null)
   const [turnover, setTurnover]         = useState<any>(null)
   const [filialConf, setFilialConf]     = useState('')
+  const [filiaisConf, setFiliaisConf]   = useState<any[]>([])
   const [pageNum, setPageNum]           = useState(1)
   const [busca, setBusca]               = useState('')
   const [deleting, setDeleting]         = useState(false)
@@ -249,12 +250,20 @@ export function GentePage() {
 
   const loadColabs = useCallback(async () => {
     const params: Record<string, string | number> = { page: pageNum, page_size: 50 }
-    if (competenciaSel) params.competencia = competenciaSel
-    if (filialConf)     params.empresa     = filialConf
-    else if (deptoSel)  params.empresa     = deptoSel
-    if (cargoSel)       params.cargo       = cargoSel
-    if (busca)          params.busca       = busca
-    try { const data = await GenteAPI.getColaboradoresPorCompetencia(params); setColabs(data) } catch {}
+    if (filialConf) {
+      // Busca do cadastro (gente_colaboradores) por filial da conferência
+      params.filial = filialConf
+      if (cargoSel) params.cargo = cargoSel
+      if (busca)    params.busca = busca
+      try { const data = await GenteAPI.getCadastro(params); setColabs(data) } catch {}
+    } else {
+      // Busca da folha de pagamento (gente_folha) — CSC
+      if (competenciaSel) params.competencia = competenciaSel
+      if (deptoSel)       params.empresa     = deptoSel
+      if (cargoSel)       params.cargo       = cargoSel
+      if (busca)          params.busca       = busca
+      try { const data = await GenteAPI.getColaboradoresPorCompetencia(params); setColabs(data) } catch {}
+    }
   }, [busca, pageNum, competenciaSel, deptoSel, cargoSel, filialConf])
 
   const loadTurnover = useCallback(async () => {
@@ -264,7 +273,11 @@ export function GentePage() {
     try { const data = await GenteAPI.getTurnover(params); setTurnover(data) } catch {}
   }, [competenciaSel, filialConf])
 
-  useEffect(() => { loadCompetencias() }, [])
+  useEffect(() => {
+    loadCompetencias()
+    // Load filiais from conferencia
+    GenteAPI.getFiliais().then(setFiliaisConf).catch(() => {})
+  }, [])
   useEffect(() => { loadStats() }, [competenciaSel, deptoSel, filialSel, cargoSel, lojasAtivas])
   useEffect(() => {
     if (genteSubSection === 'folha' || genteSubSection === 'overview') loadItens()
@@ -326,7 +339,7 @@ export function GentePage() {
       case 'folha':
         return <FolhaView itens={itens} page={pageNum} setPage={setPageNum} busca={busca} setBusca={setBusca} />
       case 'colaboradores':
-        return <ColabView colabs={colabs} turnover={turnover} page={pageNum} setPage={setPageNum} busca={busca} setBusca={setBusca} filialConf={filialConf} setFilialConf={setFilialConf} filiais={stats?.filtros?.filiais || []} />
+        return <ColabView colabs={colabs} turnover={turnover} page={pageNum} setPage={setPageNum} busca={busca} setBusca={setBusca} filialConf={filialConf} setFilialConf={setFilialConf} filiais={filiaisConf} />
       case 'ferias':
         return <FeriasView stats={stats} />
       case 'upload':
