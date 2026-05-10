@@ -20,7 +20,7 @@ const SUB_TITLES: Record<TechSubSection, [string, string]> = {
 
 interface TopbarProps {}
 
-// ── Seletor global de loja ────────────────────────────────────
+// ── Seletor global de lojas (multi-select) ───────────────────
 function LojaSelector() {
   const { lojaAtiva, setLojaAtiva, lojas, setLojas } = useDashboardStore()
   const [open, setOpen]   = React.useState(false)

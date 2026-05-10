@@ -39,9 +39,11 @@ interface DashboardStore {
   setGenteSubSection: (sub: string) => void
   conferenciaSubSection: string
   setConferenciaSubSection: (sub: string) => void
-  lojaAtiva: any | null        // loja selecionada globalmente
+  lojaAtiva: any | null           // compatibilidade - primeira loja selecionada
   setLojaAtiva: (loja: any | null) => void
-  lojas: any[]                 // cache de lojas
+  lojasAtivas: any[]              // array de lojas selecionadas (multi-select)
+  setLojasAtivas: (lojas: any[]) => void
+  lojas: any[]                    // cache de todas as lojas
   setLojas: (lojas: any[]) => void
   periodos: PeriodosPorSecao
   setPeriodoSecao: (secao: TechSubSection, p: PeriodoFiltro) => void
@@ -80,7 +82,9 @@ export const useDashboardStore = create<DashboardStore>()(
       conferenciaSubSection: 'overview',
       setConferenciaSubSection: (conferenciaSubSection) => set({ conferenciaSubSection }),
       lojaAtiva: null,
-      setLojaAtiva: (lojaAtiva) => set({ lojaAtiva }),
+      setLojaAtiva: (lojaAtiva) => set({ lojaAtiva, lojasAtivas: lojaAtiva ? [lojaAtiva] : [] }),
+      lojasAtivas: [],
+      setLojasAtivas: (lojasAtivas) => set({ lojasAtivas, lojaAtiva: lojasAtivas.length === 1 ? lojasAtivas[0] : null }),
       lojas: [],
       setLojas: (lojas) => set({ lojas }),
       periodos: PERIODOS_INICIAIS,

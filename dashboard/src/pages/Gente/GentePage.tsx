@@ -183,7 +183,7 @@ function ImportModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
 
 // ── Página Principal ──────────────────────────────────────────
 export function GentePage() {
-  const { genteSubSection } = useDashboardStore()
+  const { genteSubSection, lojasAtivas } = useDashboardStore()
   const [stats, setStats]               = useState<any>(null)
   const [competencias, setCompetencias] = useState<any[]>([])
   const [loading, setLoading]           = useState(true)
@@ -226,6 +226,8 @@ export function GentePage() {
       if (deptoSel)       params.departamento = deptoSel
       if (filialSel)      params.filial       = filialSel
       if (cargoSel)       params.cargo        = cargoSel
+      // Global loja filter
+      if (lojasAtivas.length > 0 && !filialSel) params.empresa = lojasAtivas.map((l: any) => l.nome).join('||')
       const data = await GenteAPI.getStats(Object.keys(params).length > 0 ? params : undefined)
       setStats(data)
     } catch { setStats(null) }
@@ -238,6 +240,7 @@ export function GentePage() {
     if (deptoSel)       params.departamento = deptoSel
     if (filialSel)      params.filial       = filialSel
     if (cargoSel)       params.cargo        = cargoSel
+    if (lojasAtivas.length > 0 && !filialSel) params.empresa = lojasAtivas.map((l: any) => l.nome).join('||')
     if (busca)          params.busca        = busca
     try { const data = await GenteAPI.getItens(params); setItens(data) } catch {}
   }, [competenciaSel, deptoSel, filialSel, cargoSel, busca, pageNum])
@@ -249,7 +252,7 @@ export function GentePage() {
   }, [busca, pageNum])
 
   useEffect(() => { loadCompetencias() }, [])
-  useEffect(() => { loadStats() }, [competenciaSel, deptoSel, filialSel, cargoSel])
+  useEffect(() => { loadStats() }, [competenciaSel, deptoSel, filialSel, cargoSel, lojasAtivas])
   useEffect(() => {
     if (genteSubSection === 'folha' || genteSubSection === 'overview') loadItens()
     if (genteSubSection === 'colaboradores') loadColabs()
@@ -335,6 +338,7 @@ export function GentePage() {
           </h1>
           <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginTop: 3 }}>
             {hasData ? `${stats.kpis.total_colaboradores} colaboradores · ${competenciaSel || 'todos os períodos'}` : 'Nenhum dado importado'}
+            {lojasAtivas.length > 0 && <span style={{ color: '#06b6d4', marginLeft: 6 }}>· {lojasAtivas.length === 1 ? lojasAtivas[0].nome : lojasAtivas.length + ' lojas'}</span>}
           </p>
         </div>
         {genteSubSection !== 'conferencia' && (

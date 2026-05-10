@@ -54,13 +54,16 @@ async def get_folha_stats(
     departamento: Optional[str] = Query(None),
     cargo:        Optional[str] = Query(None),
     filial:       Optional[str] = Query(None),
+    empresa:      Optional[str] = Query(None),  # múltiplas separadas por ||
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
+    # empresa filter (múltiplas lojas)
+    filial_final = filial or (empresa.split('||')[0] if empresa else None)
     return await get_stats(
         db, current_user.empresa_id,
         competencia=competencia, departamento=departamento,
-        cargo=cargo, filial=filial,
+        cargo=cargo, filial=filial_final,
     )
 
 

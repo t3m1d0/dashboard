@@ -182,7 +182,7 @@ function ImportModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
 
 // ── Página Principal ──────────────────────────────────────────
 export function ConferenciaPage() {
-  const { conferenciaSubSection } = useDashboardStore()
+  const { conferenciaSubSection, lojasAtivas } = useDashboardStore()
   const [stats, setStats]           = useState<any>(null)
   const [competencias, setCompetencias] = useState<any[]>([])
   const [loading, setLoading]       = useState(true)
@@ -216,7 +216,10 @@ export function ConferenciaPage() {
     try {
       const params: Record<string,string> = {}
       if (competenciaSel) params.competencia = competenciaSel
-      if (filialSel)      params.filial      = filialSel
+      // Use local filial filter OR global loja selector
+      const filialFilter = filialSel || (lojasAtivas.length === 1 ? lojasAtivas[0].nome : '')
+      if (filialFilter)   params.filial      = filialFilter
+      else if (lojasAtivas.length > 1) params.filiais = lojasAtivas.map((l: any) => l.nome).join('||')
       const data = await ConferenciaAPI.getStats(Object.keys(params).length > 0 ? params : undefined)
       setStats(data)
     } catch { setStats(null) }
@@ -226,13 +229,14 @@ export function ConferenciaPage() {
   const loadLinhas = useCallback(async () => {
     const params: Record<string, string | number> = { page: pageNum, page_size: 50 }
     if (competenciaSel) params.competencia = competenciaSel
-    if (filialSel)      params.filial      = filialSel
+    const filialLFilter = filialSel || (lojasAtivas.length === 1 ? lojasAtivas[0].nome : '')
+    if (filialLFilter)  params.filial      = filialLFilter
     if (busca)          params.busca       = busca
     try { const data = await ConferenciaAPI.getLinhas(params); setLinhas(data) } catch {}
   }, [competenciaSel, filialSel, busca, pageNum])
 
   useEffect(() => { loadCompetencias() }, [])
-  useEffect(() => { loadStats() }, [competenciaSel, filialSel])
+  useEffect(() => { loadStats() }, [competenciaSel, filialSel, lojasAtivas])
   useEffect(() => {
     if (conferenciaSubSection === 'colaboradores') loadLinhas()
   }, [conferenciaSubSection, competenciaSel, filialSel, busca, pageNum])
@@ -439,6 +443,7 @@ export function ConferenciaPage() {
             {hasData
               ? `${kpis.total_funcionarios} colaboradores · ${porFilial.length} filiais${competenciaSel ? ' · ' + competenciaSel : ''}`
               : 'Importe os PDFs de Conferência de Folha por filial'}
+            {lojasAtivas.length > 0 && <span style={{ color: '#f59e0b', marginLeft: 6 }}>· {lojasAtivas.length === 1 ? lojasAtivas[0].nome : lojasAtivas.length + ' lojas'}</span>}
           </p>
         </div>
         <button onClick={() => setImportOpen(true)} className="flex items-center gap-2 px-3.5 py-2 rounded-xl"

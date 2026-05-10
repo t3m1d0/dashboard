@@ -4,6 +4,7 @@
 // ============================================================
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { ComprasAPI } from '@/services/api'
+import { useDashboardStore } from '@/store'
 import { LojaSelectField } from '@/components/UI/LojaSelectField'
 import {
   Upload, RefreshCw, CheckCircle2, AlertTriangle, X,
@@ -352,6 +353,7 @@ function ImportModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
 
 // ── Página principal ──────────────────────────────────────────
 export function MovimentacaoPage() {
+  const { lojasAtivas } = useDashboardStore()
   const [stats, setStats]           = useState<any>(null)
   const [periodos, setPeriodos]     = useState<any[]>([])
   const [loading, setLoading]       = useState(true)
@@ -398,7 +400,11 @@ export function MovimentacaoPage() {
       params.ano = String(anoSel)
       // Filtros complementares
       if (grupoSel)               params.grupo     = grupoSel
-      if (filialSels.length > 0)  params['filiais'] = filialSels.join('||')
+      const allFiliais = [...new Set([
+        ...filialSels,
+        ...lojasAtivas.map((l: any) => l.nome)
+      ])]
+      if (allFiliais.length > 0) params['filiais'] = allFiliais.join('||')
       if (filtroView !== 'todos') params.categoria = filtroView
       const data = await ComprasAPI.getStats(params)
       setStats(data)
@@ -411,7 +417,11 @@ export function MovimentacaoPage() {
     if (mesSel > 0)            params.mes       = mesSel
     params.ano                                   = anoSel
     if (grupoSel)               params.grupo     = grupoSel
-    if (filialSels.length > 0) params['filiais'] = filialSels.join('||')
+    const allFiliaisL = [...new Set([
+      ...filialSels,
+      ...lojasAtivas.map((l: any) => l.nome)
+    ])]
+    if (allFiliaisL.length > 0) params['filiais'] = allFiliaisL.join('||')
     if (busca)                  params.busca     = busca
     if (filtroView !== 'todos') params.categoria = filtroView
     try {
@@ -437,7 +447,7 @@ export function MovimentacaoPage() {
   }
 
   useEffect(() => { loadPeriodos() }, [])
-  useEffect(() => { loadStats() }, [mesSel, anoSel, grupoSel, filialSels, filtroView])
+  useEffect(() => { loadStats() }, [mesSel, anoSel, grupoSel, filialSels, filtroView, lojasAtivas])
   useEffect(() => { if (viewMode === 'lista') loadItens() }, [viewMode, mesSel, anoSel, grupoSel, filialSels, busca, pageNum, filtroView])
 
   const hasData = stats && stats.kpis && stats.kpis.total > 0

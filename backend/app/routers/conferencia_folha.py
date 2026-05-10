@@ -1,7 +1,7 @@
 # ============================================================
 # app/routers/conferencia_folha.py
 # ============================================================
-from fastapi import APIRouter, Depends, UploadFile, File, Query, HTTPException
+from fastapi import APIRouter, Depends, UploadFile, File, Form, Query, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, func, desc, delete as sa_delete
 from typing import Optional
@@ -28,7 +28,6 @@ async def import_pdf(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    from fastapi import Form as FastapiForm
     content = await file.read()
     if len(content) > MAX_BYTES:
         raise HTTPException(413, f"Máximo {settings.MAX_UPLOAD_SIZE_MB}MB")
@@ -47,10 +46,13 @@ async def import_pdf(
 async def get_stats_endpoint(
     competencia: Optional[str] = Query(None),
     filial:      Optional[str] = Query(None),
+    filiais:     Optional[str] = Query(None),  # múltiplas separadas por ||
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    return await get_stats(db, current_user.empresa_id, competencia=competencia, filial=filial)
+    # Se múltiplas filiais, passa apenas a primeira para o stats (agrega no service)
+    filial_final = filial or (filiais.split('||')[0] if filiais else None)
+    return await get_stats(db, current_user.empresa_id, competencia=competencia, filial=filial_final)
 
 
 @router.get("/linhas")
