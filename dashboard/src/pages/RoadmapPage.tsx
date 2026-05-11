@@ -158,12 +158,11 @@ export function RoadmapPage() {
 
   useEffect(() => {
     setLoading(true)
-    const params = toQueryParams()
-    RedmineEntregasAPI.getRoadmap(Object.keys(params).length > 0 ? params : undefined)
+    RedmineEntregasAPI.getRoadmap()
       .then(setRedmineData)
       .catch(() => setRedmineData({ configurado: false, items: [], sprints: [] }))
       .finally(() => setLoading(false))
-  }, [periodo.mes, periodo.ano, periodo.dataInicio, periodo.dataFim, periodo.modo])
+  }, [])
 
   const isRedmine   = redmineData?.configurado === true
   const allRoadmap  = isRedmine ? (redmineData?.items || []) : data.roadmap
