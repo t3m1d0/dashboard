@@ -323,93 +323,156 @@ export function RoadmapPage() {
 
 // ── Modal de detalhes do ticket ───────────────────────────────
 function TicketModal({ item, onClose }: { item: any; onClose: () => void }) {
-  const STATUS_COLORS: Record<string, string> = {
-    'Fazendo': '#3b82f6', 'A testar': '#8b5cf6', 'Aguardando Build': '#f59e0b',
-    'A fazer': '#6b7280', 'Concluída': '#10b981', 'Rejeitado': '#ef4444',
-    'Cancelado': '#ef4444', 'Não entregue': '#ef4444',
+  const [detail, setDetail] = useState<any>(null)
+  const [loadingDetail, setLoadingDetail] = useState(false)
+
+  useEffect(() => {
+    if (!item?.id) return
+    setLoadingDetail(true)
+    import('@/services/api').then(({ RedmineEntregasAPI }) => {
+      RedmineEntregasAPI.getTicket(item.id)
+        .then(setDetail)
+        .catch(() => setDetail(null))
+        .finally(() => setLoadingDetail(false))
+    })
+  }, [item?.id])
+
+  const d = detail || item  // use detail if loaded, fallback to item
+
+  const sc: Record<string,string> = {
+    'Fazendo':'#3b82f6','A testar':'#8b5cf6','Aguardando Build':'#f59e0b',
+    'A fazer':'#6b7280','Concluída':'#10b981','Rejeitado':'#ef4444','Cancelado':'#ef4444','Não entregue':'#ef4444'
   }
-  const PRIO_COLORS: Record<string, string> = {
-    'Urgente': '#ef4444', 'Alta': '#f59e0b', 'Normal': '#3b82f6', 'Baixa': '#6b7280',
+  const pc: Record<string,string> = { 'Urgente':'#ef4444','Alta':'#f59e0b','Normal':'#3b82f6','Baixa':'#6b7280' }
+  const statusColor = sc[d.status] || '#6b7280'
+  const prioColor   = pc[d.prioridade] || '#6b7280'
+
+  const fmtDate = (s: string | null) => {
+    if (!s) return null
+    try {
+      return new Date(s).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+    } catch { return s }
   }
-  const statusColor = STATUS_COLORS[item.status] || '#6b7280'
-  const prioColor   = PRIO_COLORS[item.prioridade] || '#6b7280'
 
   return (
-    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4"
+      onClick={onClose} onWheel={e => e.stopPropagation()}>
       <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)' }} />
-      <div className="relative z-10 w-full" style={{ maxWidth: 600, maxHeight: '85vh', overflowY: 'auto', background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-xl)' }}
+      <div className="relative z-10 w-full" style={{ maxWidth: 680, maxHeight: '88vh', display: 'flex', flexDirection: 'column', background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-xl)' }}
         onClick={e => e.stopPropagation()}>
 
         {/* Header */}
-        <div className="p-5 pb-4" style={{ borderBottom: '1px solid var(--border)' }}>
+        <div className="p-5 pb-4 flex-shrink-0" style={{ borderBottom: '1px solid var(--border)' }}>
           <div className="flex items-start justify-between gap-3">
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-2 flex-wrap">
-                <span style={{ fontSize: '0.7rem', fontWeight: 700, padding: '2px 8px', borderRadius: 99, background: `${statusColor}20`, color: statusColor, border: `1px solid ${statusColor}40` }}>
-                  {item.status}
-                </span>
-                <span style={{ fontSize: '0.7rem', fontWeight: 600, padding: '2px 8px', borderRadius: 99, background: `${prioColor}15`, color: prioColor }}>
-                  {item.prioridade || 'Normal'}
-                </span>
-                {item.tipo && (
-                  <span style={{ fontSize: '0.7rem', padding: '2px 8px', borderRadius: 99, background: 'var(--bg-elevated)', color: 'var(--text-muted)' }}>
-                    {item.tipo}
-                  </span>
-                )}
+                <span style={{ fontSize: '0.7rem', fontWeight: 700, padding: '2px 8px', borderRadius: 99, background: `${statusColor}20`, color: statusColor, border: `1px solid ${statusColor}40` }}>{d.status}</span>
+                {d.prioridade && <span style={{ fontSize: '0.7rem', fontWeight: 600, padding: '2px 8px', borderRadius: 99, background: `${prioColor}15`, color: prioColor }}>{d.prioridade}</span>}
+                {d.tipo || d.tracker ? <span style={{ fontSize: '0.7rem', padding: '2px 8px', borderRadius: 99, background: 'var(--bg-elevated)', color: 'var(--text-muted)' }}>{d.tipo || d.tracker}</span> : null}
+                {d.redmine_id && <span style={{ fontSize: '0.65rem', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>#{d.redmine_id}</span>}
               </div>
-              <div style={{ fontSize: '1rem', fontWeight: 700, lineHeight: 1.3 }}>{item.titulo}</div>
+              <div style={{ fontSize: '1rem', fontWeight: 700, lineHeight: 1.3 }}>{d.titulo}</div>
             </div>
             <button onClick={onClose} style={{ width: 28, height: 28, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 8, cursor: 'pointer', color: 'var(--text-secondary)', fontSize: 16 }}>✕</button>
           </div>
         </div>
 
-        {/* Body */}
-        <div className="p-5 flex flex-col gap-4">
+        {/* Body — scrollable */}
+        <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-4" style={{ overscrollBehavior: 'contain' }}>
+
           {/* Info grid */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-2.5">
             {[
-              { label: 'Projeto',      value: item.projeto    },
-              { label: 'Responsável',  value: item.responsavel },
-              { label: 'Prazo',        value: item.prazo || '—' },
-              { label: 'Estimativa',   value: item.horas ? `${item.horas}h` : '—' },
-              { label: 'Progresso',    value: item.progresso != null ? `${item.progresso}%` : '—' },
-              { label: 'Sprint',       value: item.sprint || item.versao || '—' },
-            ].filter(x => x.value && x.value !== '—' && x.value !== 'undefined').map(({ label, value }) => (
-              <div key={label} className="rounded-xl p-3" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
-                <div style={{ fontSize: '0.62rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', marginBottom: 4 }}>{label}</div>
-                <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>{value}</div>
+              { label: 'Projeto',      value: d.projeto },
+              { label: 'Responsável',  value: d.responsavel },
+              { label: 'Sprint',       value: d.versao || d.sprint || null },
+              { label: 'Estimativa',   value: d.estimativa_horas || d.horas_estimadas ? `${d.estimativa_horas || d.horas_estimadas}h` : null },
+              { label: 'Horas Gastas', value: d.horas_gastas ? `${d.horas_gastas}h` : null },
+              { label: 'Prazo',        value: d.data_prazo || d.prazo || null },
+            ].filter(x => x.value).map(({ label, value }) => (
+              <div key={label} className="rounded-xl p-2.5" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
+                <div style={{ fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', marginBottom: 3 }}>{label}</div>
+                <div style={{ fontSize: '0.82rem', fontWeight: 600 }}>{value}</div>
               </div>
             ))}
           </div>
 
-          {/* Barra de progresso */}
-          {item.progresso > 0 && (
+          {/* Progresso */}
+          {(d.progresso || 0) > 0 && (
             <div>
               <div className="flex justify-between mb-1.5">
                 <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Progresso</span>
-                <span style={{ fontSize: '0.72rem', fontWeight: 700, color: statusColor }}>{item.progresso}%</span>
+                <span style={{ fontSize: '0.72rem', fontWeight: 700, color: statusColor }}>{d.progresso}%</span>
               </div>
               <div style={{ height: 8, borderRadius: 4, background: 'var(--bg-elevated)', overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: `${item.progresso}%`, background: statusColor, borderRadius: 4, transition: 'width 0.5s' }} />
+                <div style={{ height: '100%', width: `${d.progresso}%`, background: statusColor, borderRadius: 4, transition: 'width 0.5s' }} />
               </div>
             </div>
           )}
 
+          {/* Datas */}
+          <div className="rounded-xl p-3.5" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
+            <div style={{ fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', marginBottom: 10 }}>Histórico de Datas</div>
+            <div className="flex flex-col gap-2">
+              {[
+                { label: '🟢 Criado em',      value: fmtDate(d.data_criacao) },
+                { label: '✏️ Atualizado em',  value: fmtDate(d.data_atualizacao) },
+                { label: '✅ Finalizado em',   value: fmtDate(d.data_fechamento) },
+                { label: '📅 Prazo',           value: d.data_prazo || d.prazo || null },
+                { label: '🔄 Sincronizado',    value: fmtDate(d.sincronizado_em) },
+              ].filter(x => x.value).map(({ label, value }) => (
+                <div key={label} className="flex items-center justify-between">
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{label}</span>
+                  <span style={{ fontSize: '0.75rem', fontFamily: 'var(--font-mono)', color: 'var(--text-primary)', fontWeight: 500 }}>{value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
           {/* Descrição */}
-          {item.descricao && item.descricao !== '—' && (
+          {d.descricao && d.descricao !== '—' && (
             <div className="rounded-xl p-4" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
-              <div style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', marginBottom: 8 }}>Descrição</div>
-              <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{item.descricao}</div>
+              <div style={{ fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', marginBottom: 8 }}>Descrição</div>
+              <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.6, whiteSpace: 'pre-wrap', maxHeight: 160, overflowY: 'auto' }}>{d.descricao}</div>
             </div>
           )}
 
           {/* Tags */}
-          {item.tags?.length > 0 && (
+          {(d.tags || []).length > 0 && (
             <div className="flex flex-wrap gap-1.5">
-              {item.tags.map((t: string) => (
+              {d.tags.map((t: string) => (
                 <span key={t} style={{ fontSize: '0.68rem', padding: '2px 8px', borderRadius: 99, background: 'var(--bg-elevated)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>{t}</span>
               ))}
             </div>
+          )}
+
+          {/* Comentários */}
+          {loadingDetail && (
+            <div className="flex items-center gap-2" style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>
+              <div style={{ width: 14, height: 14, borderRadius: '50%', border: '2px solid var(--border)', borderTopColor: '#8b5cf6', animation: 'spin 0.7s linear infinite' }} />
+              Carregando histórico…
+            </div>
+          )}
+          {!loadingDetail && detail?.comentarios?.length > 0 && (
+            <div>
+              <div style={{ fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', marginBottom: 10 }}>
+                Comentários ({detail.comentarios.length})
+              </div>
+              <div className="flex flex-col gap-2.5">
+                {detail.comentarios.map((c: any, i: number) => (
+                  <div key={i} className="rounded-xl p-3.5" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
+                    <div className="flex items-center justify-between mb-2">
+                      <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#8b5cf6' }}>{c.autor}</span>
+                      <span style={{ fontSize: '0.68rem', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>{fmtDate(c.criado_em)}</span>
+                    </div>
+                    <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>{c.texto}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {!loadingDetail && detail && detail.comentarios?.length === 0 && (
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'center', padding: '8px 0' }}>Nenhum comentário registrado</div>
           )}
         </div>
       </div>
