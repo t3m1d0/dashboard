@@ -285,18 +285,14 @@ export function GentePage() {
   }, [])
 
   const loadOverview = useCallback(async () => {
-    // Overview always loads all data — no competencia filter
-    // (consolidates folha + conferencia regardless of selected month)
-    try { const d = await GenteAPI.getOverview(); setOverview(d) } catch (e) { console.error('overview error', e) }
-  }, [])
-
-  useEffect(() => {
-    loadOverview()  // Load on mount and whenever section changes to overview
-  }, [])
+    const params: Record<string,string> = {}
+    if (competenciaSel) params.competencia = competenciaSel
+    try { const d = await GenteAPI.getOverview(params); setOverview(d) } catch (e) { console.error('overview error', e) }
+  }, [competenciaSel])
 
   useEffect(() => {
     if (genteSubSection === 'overview') loadOverview()
-  }, [genteSubSection])
+  }, [genteSubSection, competenciaSel])
   useEffect(() => { loadStats() }, [competenciaSel, deptoSel, filialSel, cargoSel, lojasAtivas])
   useEffect(() => {
     if (genteSubSection === 'folha' || genteSubSection === 'overview') loadItens()
@@ -858,10 +854,16 @@ function OverviewView({ stats, overview, competenciaSel }: any) {
   const fk = overview?.folha?.kpis || {}
   const ck = overview?.conferencia?.kpis || {}
   const cv = overview?.consolidado || {}
-  const porFilial = overview?.conferencia?.por_filial || []
-  const porCargo  = overview?.conferencia?.por_cargo || []
+  const porFilial  = overview?.conferencia?.por_filial || []
+  const porCargo   = overview?.conferencia?.por_cargo || []
   const compsFolha = overview?.folha?.competencias || []
   const compsConf  = overview?.conferencia?.competencias || []
+
+  // Competências disponíveis (união das duas fontes)
+  const todasComps = [...new Set([
+    ...compsFolha.map((c: any) => c.competencia),
+    ...compsConf.map((c: any) => c.competencia),
+  ])].sort().reverse()
 
   const hasOverview = !!(overview && (cv.total_colaboradores > 0))
 
@@ -896,6 +898,33 @@ function OverviewView({ stats, overview, competenciaSel }: any) {
 
   return (
     <div className="flex flex-col gap-2">
+
+      {/* Filtro de período */}
+      {todasComps.length > 0 && (
+        <div className="mb-5">
+          <div style={{ fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-muted)', marginBottom: 10 }}>Competência</div>
+          <div className="flex gap-1.5 flex-wrap items-center">
+            <button
+              onClick={() => { /* handled by parent via mesSel=0 */ }}
+              style={{ padding: '5px 14px', borderRadius: 8, fontSize: '0.78rem', fontWeight: 600, background: !competenciaSel ? '#06b6d4' : 'var(--bg-elevated)', color: !competenciaSel ? '#0a0a0a' : 'var(--text-secondary)', border: `1px solid ${!competenciaSel ? '#06b6d4' : 'var(--border)'}`, cursor: 'default', fontFamily: 'var(--font-body)' }}>
+              {!competenciaSel ? 'Recente' : 'Recente'}
+            </button>
+            {todasComps.map((comp: string) => {
+              const [ano, mes] = comp.split('-').map(Number)
+              const MESES_ABR = ['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
+              const active = competenciaSel === comp
+              return (
+                <span key={comp} style={{ padding: '5px 14px', borderRadius: 8, fontSize: '0.78rem', fontWeight: 600, background: active ? '#06b6d4' : 'var(--bg-card)', color: active ? '#0a0a0a' : 'var(--text-secondary)', border: `1px solid ${active ? '#06b6d4' : 'var(--border)'}`, fontFamily: 'var(--font-body)' }}>
+                  {MESES_ABR[mes]}/{ano}
+                </span>
+              )
+            })}
+          </div>
+          <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: 6 }}>
+            Use os filtros de mês no topo da página para filtrar por período
+          </div>
+        </div>
+      )}
 
       {/* ── CONSOLIDADO ── */}
       <Section title="Consolidado — CSC + Filiais" color="#06b6d4">
