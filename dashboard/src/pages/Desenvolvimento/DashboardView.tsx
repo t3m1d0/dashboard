@@ -4,6 +4,7 @@
 import { useEffect, useState } from 'react'
 import { useRedmineStore } from '@/store/redmine'
 import { RedmineAPI } from '@/services/api'
+import { useSectionPeriodo } from '@/hooks/useSectionPeriodo'
 import { formatHoras } from '@/utils/redmine'
 import { RefreshCw, AlertTriangle, Clock, CheckCircle2, TrendingUp, Users, Zap } from 'lucide-react'
 import {
@@ -41,6 +42,7 @@ function KPIBadge({ label, value, unit = '', color, icon, sub }: any) {
 
 export function DashboardView() {
   const { dashboard, setDashboard, isSyncing, setIsSyncing, setLastSyncResult, setDashboardCachedAt, dashboardCachedAt } = useRedmineStore()
+  const { periodo } = useSectionPeriodo('desenvolvimento')
   const [loading, setLoading] = useState(!dashboard)
   const [error, setError]     = useState<string | null>(null)
 
@@ -53,7 +55,10 @@ export function DashboardView() {
     setLoading(true)
     setError(null)
     try {
-      const data = await RedmineAPI.getDashboard()
+      const params: Record<string,string> = {}
+      if (periodo.mes) params.mes = String(periodo.mes)
+      if (periodo.ano) params.ano = String(periodo.ano)
+      const data = await RedmineAPI.getDashboard(Object.keys(params).length > 0 ? params : undefined)
       setDashboard(data)
       setDashboardCachedAt(now)
     } catch (e: any) {
@@ -76,7 +81,7 @@ export function DashboardView() {
     }
   }
 
-  useEffect(() => { loadDashboard() }, [])
+  useEffect(() => { loadDashboard(true) }, [periodo.mes, periodo.ano])
 
   if (loading) return (
     <div className="flex items-center justify-center py-24">
