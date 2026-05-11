@@ -155,6 +155,7 @@ export const RedmineEntregasAPI = {
       : ''
     return request<{ configurado: boolean; items: any[] }>(`/redmine/entregas${q}`)
   },
+  getTicket: (id: string) => request<any>(`/redmine/ticket/${id}`),
   getRoadmap: (params?: Record<string, string | number>) => {
     const q = params && Object.keys(params).length > 0
       ? '?' + new URLSearchParams(params as any).toString()
