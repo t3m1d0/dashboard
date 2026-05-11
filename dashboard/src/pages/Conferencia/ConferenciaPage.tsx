@@ -197,10 +197,7 @@ export function ConferenciaPage() {
   const [pageNum, setPageNum]       = useState(1)
   const [busca, setBusca]           = useState('')
 
-  // Quando 'Todos', usa a competência mais recente (não soma tudo)
-  const competenciaSel = mesSel > 0
-    ? `${anoSel}-${String(mesSel).padStart(2,'0')}`
-    : (competencias.length > 0 ? competencias[0].competencia : '')
+  const competenciaSel = mesSel > 0 ? `${anoSel}-${String(mesSel).padStart(2,'0')}` : ''
 
   const loadCompetencias = useCallback(async () => {
     try {
@@ -464,8 +461,22 @@ export function ConferenciaPage() {
           <div className="flex gap-1.5 flex-wrap items-center">
             <button onClick={() => setMesSel(0)}
               style={{ padding: '5px 14px', borderRadius: 8, fontSize: '0.78rem', fontWeight: 600, background: mesSel === 0 ? '#f59e0b' : 'var(--bg-elevated)', color: mesSel === 0 ? '#0a0a0a' : 'var(--text-secondary)', border: `1px solid ${mesSel === 0 ? '#f59e0b' : 'var(--border)'}`, cursor: 'pointer', fontFamily: 'var(--font-body)' }}>
-              Recente
+              Total Ano
             </button>
+            {competencias.length > 0 && (
+              <button
+                onClick={() => {
+                  const [a, m] = competencias[0].competencia.split('-').map(Number)
+                  setAnoSel(a); setMesSel(m)
+                }}
+                style={{ padding: '5px 14px', borderRadius: 8, fontSize: '0.78rem', fontWeight: 600,
+                  background: competenciaSel === competencias[0]?.competencia ? '#f59e0b' : 'var(--bg-elevated)',
+                  color: competenciaSel === competencias[0]?.competencia ? '#0a0a0a' : 'var(--text-secondary)',
+                  border: `1px solid ${competenciaSel === competencias[0]?.competencia ? '#f59e0b' : 'var(--border)'}`,
+                  cursor: 'pointer', fontFamily: 'var(--font-body)' }}>
+                Recente
+              </button>
+            )}
             {competencias
               .filter((c: any) => c.competencia?.startsWith(String(anoSel)))
               .sort((a: any, b: any) => a.competencia.localeCompare(b.competencia))
