@@ -197,7 +197,10 @@ export function ConferenciaPage() {
   const [pageNum, setPageNum]       = useState(1)
   const [busca, setBusca]           = useState('')
 
-  const competenciaSel = mesSel > 0 ? `${anoSel}-${String(mesSel).padStart(2,'0')}` : ''
+  // Quando 'Todos', usa a competência mais recente (não soma tudo)
+  const competenciaSel = mesSel > 0
+    ? `${anoSel}-${String(mesSel).padStart(2,'0')}`
+    : (competencias.length > 0 ? competencias[0].competencia : '')
 
   const loadCompetencias = useCallback(async () => {
     try {
@@ -461,7 +464,7 @@ export function ConferenciaPage() {
           <div className="flex gap-1.5 flex-wrap items-center">
             <button onClick={() => setMesSel(0)}
               style={{ padding: '5px 14px', borderRadius: 8, fontSize: '0.78rem', fontWeight: 600, background: mesSel === 0 ? '#f59e0b' : 'var(--bg-elevated)', color: mesSel === 0 ? '#0a0a0a' : 'var(--text-secondary)', border: `1px solid ${mesSel === 0 ? '#f59e0b' : 'var(--border)'}`, cursor: 'pointer', fontFamily: 'var(--font-body)' }}>
-              Todos
+              Recente
             </button>
             {competencias
               .filter((c: any) => c.competencia?.startsWith(String(anoSel)))
