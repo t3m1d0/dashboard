@@ -130,7 +130,10 @@ export const RedmineAPI = {
   updateProjeto: (id: string, sincronizar: boolean) =>
     request(`/redmine/projetos/${id}?sincronizar=${sincronizar}`, { method: 'PATCH' }),
 
-  getDashboard: () => request<any>('/redmine/dashboard'),
+  getDashboard: (params?: Record<string,string>) => {
+    const q = params && Object.keys(params).length > 0 ? '?' + new URLSearchParams(params).toString() : ''
+    return request<any>(`/redmine/dashboard${q}`)
+  },
 
   getTarefas: (params?: Record<string, string | number | boolean>) => {
     const q = params ? '?' + new URLSearchParams(params as any).toString() : ''
