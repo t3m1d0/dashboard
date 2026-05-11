@@ -1,7 +1,9 @@
 // ============================================================
 // Redmine/EquipeView.tsx — Produtividade da equipe
 // ============================================================
+import { useState, useEffect } from 'react'
 import { useRedmineStore } from '@/store/redmine'
+import { RedmineAPI } from '@/services/api'
 import { getInitials } from '@/utils'
 import { formatHoras } from '@/utils/redmine'
 import { Trophy, Clock, CheckCircle2, AlertTriangle, TrendingUp } from 'lucide-react'
@@ -83,10 +85,28 @@ function MembroCard({ membro, rank }: { membro: any; rank: number }) {
 }
 
 export function EquipeView() {
-  const { dashboard } = useRedmineStore()
+  const { dashboard: storeDashboard } = useRedmineStore()
+  const [mesSel, setMesSel]     = useState(0)
+  const [anoSel, setAnoSel]     = useState(new Date().getFullYear())
+  const [filtrado, setFiltrado] = useState<any>(null)
+  const [loading, setLoading]   = useState(false)
+
+  const MESES = ['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
+
+  useEffect(() => {
+    if (mesSel === 0) { setFiltrado(null); return }
+    setLoading(true)
+    const params: Record<string,string> = { ano: String(anoSel), mes: String(mesSel) }
+    RedmineAPI.getDashboard(params)
+      .then(setFiltrado)
+      .catch(() => setFiltrado(null))
+      .finally(() => setLoading(false))
+  }, [mesSel, anoSel])
+
+  const dashboard = filtrado || storeDashboard
   const equipe = dashboard?.equipe || []
 
-  if (equipe.length === 0) return (
+  if (equipe.length === 0 && !loading) return (
     <div className="flex flex-col items-center justify-center py-20 gap-3">
       <Trophy size={40} style={{ color: 'var(--text-muted)' }} />
       <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Sincronize para ver métricas da equipe</div>
@@ -103,10 +123,46 @@ export function EquipeView() {
 
   return (
     <div>
+      {/* Filtro de mês */}
+      <div className="mb-5">
+        <div style={{ fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-muted)', marginBottom: 10 }}>
+          Competência — {anoSel}
+        </div>
+        <div className="flex gap-1.5 flex-wrap items-center">
+          <button onClick={() => setMesSel(0)}
+            style={{ padding: '5px 14px', borderRadius: 8, fontSize: '0.78rem', fontWeight: 600, background: mesSel === 0 ? '#8b5cf6' : 'var(--bg-elevated)', color: mesSel === 0 ? '#fff' : 'var(--text-secondary)', border: `1px solid ${mesSel === 0 ? '#8b5cf6' : 'var(--border)'}`, cursor: 'pointer', fontFamily: 'var(--font-body)' }}>
+            Todos
+          </button>
+          {MESES.slice(1).map((m, i) => {
+            const mes = i + 1
+            const active = mesSel === mes
+            return (
+              <button key={mes} onClick={() => setMesSel(mes)}
+                style={{ padding: '5px 14px', borderRadius: 8, fontSize: '0.78rem', fontWeight: 600, background: active ? '#8b5cf6' : 'var(--bg-card)', color: active ? '#fff' : 'var(--text-secondary)', border: `1px solid ${active ? '#8b5cf6' : 'var(--border)'}`, cursor: 'pointer', fontFamily: 'var(--font-body)', transition: 'all 0.15s' }}>
+                {m}
+              </button>
+            )
+          })}
+          {mesSel > 0 && (
+            <button onClick={() => setMesSel(0)}
+              style={{ marginLeft: 'auto', padding: '5px 12px', borderRadius: 8, fontSize: '0.72rem', fontWeight: 600, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', color: '#f87171', cursor: 'pointer', fontFamily: 'var(--font-body)' }}>
+              ✕ Limpar {MESES[mesSel]}
+            </button>
+          )}
+        </div>
+      </div>
+
+      {loading && (
+        <div className="flex items-center gap-2 mb-4" style={{ color: 'var(--text-muted)', fontSize: '0.82rem' }}>
+          <div style={{ width: 16, height: 16, borderRadius: '50%', border: '2px solid var(--border)', borderTopColor: '#8b5cf6', animation: 'spin 0.7s linear infinite' }} />
+          Carregando dados de {MESES[mesSel]}…
+        </div>
+      )}
+
       {/* Ranking cards */}
       <div className="mb-6">
         <div style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', marginBottom: 12 }}>
-          🏆 Ranking de Produtividade
+          🏆 Ranking de Produtividade {mesSel > 0 ? `— ${MESES[mesSel]}/${anoSel}` : ''}
         </div>
         <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))' }}>
           {equipe.map((m, i) => <MembroCard key={m.membro_id} membro={m} rank={i + 1} />)}
