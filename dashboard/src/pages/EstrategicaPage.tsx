@@ -66,13 +66,15 @@ export function EstrategicaPage() {
   // Mescla Redmine + manual
   const merged = {
     ...ve,
-    projetosEntregues:          rmSnap?.kpis?.concluidas   ?? ve.projetosEntregues,
-    incidentesCriticosEvitados: rmSnap?.kpis?.atrasadas    ?? ve.incidentesCriticosEvitados,
-    horasEconomizidasAutomacao: rmSnap?.kpis?.horas_gastas ?? ve.horasEconomizidasAutomacao,
-    franquiasSuportadas:        form.franquiasSuportadas,
-    disponibilidadeSistemas:    form.disponibilidadeSistemas,
+    projetosEntregues:          rmSnap?.kpis?.concluidas            ?? ve.projetosEntregues,
+    incidentesCriticosEvitados: rmSnap?.kpis?.atrasadas             ?? ve.incidentesCriticosEvitados,
+    horasEconomizidasAutomacao: rmSnap?.kpis?.horas_gastas          ?? ve.horasEconomizidasAutomacao,
+    // Automático do banco
+    franquiasSuportadas:        rmSnap?.franquias_ativas             || form.franquiasSuportadas,
+    disponibilidadeSistemas:    rmSnap?.sla_sustentacao              || form.disponibilidadeSistemas,
+    crescimentoOperacao:        rmSnap?.crescimento_chamados         ?? form.crescimentoOperacao,
+    // Manual (sem fonte automática ainda)
     reducaoCustosEstimada:      form.reducaoCustosEstimada,
-    crescimentoOperacao:        form.crescimentoOperacao,
     scoreSeguranca:             form.scoreSeguranca,
     saudeInfraestrutura:        form.saudeInfraestrutura,
   }
@@ -133,7 +135,7 @@ export function EstrategicaPage() {
       {/* KPI cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
         {[
-          { label: 'Franquias Suportadas', value: merged.franquiasSuportadas,         color: '#8b5cf6', suffix: '' },
+          { label: 'Franquias Suportadas', value: merged.franquiasSuportadas,         color: '#8b5cf6', suffix: '', auto: !!rmSnap?.franquias_ativas },
           { label: 'Disponibilidade',      value: merged.disponibilidadeSistemas,     color: '#10b981', suffix: '%' },
           { label: 'Score Segurança',      value: merged.scoreSeguranca,              color: '#3b82f6', suffix: '/100' },
           { label: 'Saúde da Infra',       value: merged.saudeInfraestrutura,         color: '#f59e0b', suffix: '%' },
@@ -296,6 +298,9 @@ export function EstrategicaPage() {
                       { label: 'Projetos Entregues',  value: rmSnap?.kpis?.concluidas ?? 0 },
                       { label: 'Tarefas Atrasadas',   value: rmSnap?.kpis?.atrasadas  ?? 0 },
                       { label: 'Horas em Projetos',   value: `${Math.round(rmSnap?.kpis?.horas_gastas || 0)}h` },
+                      { label: 'Chamados (sustent.)', value: rmSnap?.chamados_total ?? 0 },
+                      { label: 'SLA Sustentação',     value: `${rmSnap?.sla_sustentacao ?? 0}%` },
+                      { label: 'Franquias Ativas',    value: rmSnap?.franquias_ativas ?? 0 },
                     ].map(item => (
                       <div key={item.label} className="text-center rounded-lg p-2" style={{ background: 'var(--bg-elevated)' }}>
                         <div style={{ fontFamily: 'var(--font-mono)', fontSize: '1.1rem', fontWeight: 700, color: '#8b5cf6' }}>{item.value}</div>
