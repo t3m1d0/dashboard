@@ -562,7 +562,7 @@ function ColabView({ linhas, page, setPage, busca, setBusca }: any) {
                     onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '' }}>
                     <td style={{ padding: '7px 12px', fontSize: '0.8rem', fontWeight: 500, maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.nome}</td>
                     <td style={{ padding: '7px 12px', fontSize: '0.72rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>{r.cargo}</td>
-                    <td style={{ padding: '7px 12px', fontSize: '0.7rem', color: 'var(--text-muted)', maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.filial_nome}</td>
+                    <td style={{ padding: '7px 12px', fontSize: '0.7rem', color: 'var(--text-muted)', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.filial_nome}</td>
                     <td style={{ padding: '7px 12px', fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--text-muted)' }}>{r.dt_admissao}</td>
                     <td style={{ padding: '7px 12px', fontFamily: 'var(--font-mono)', fontSize: '0.72rem', color: '#f59e0b' }}>{fmtBRL(r.total_proventos)}</td>
                     <td style={{ padding: '7px 12px', fontFamily: 'var(--font-mono)', fontSize: '0.72rem', color: '#ef4444' }}>{r.inss > 0 ? fmtBRL(r.inss) : '—'}</td>
