@@ -37,7 +37,7 @@ const IMPACT_CONFIG: Record<string, { label: string; color: string; bg: string }
 }
 
 // ── Card individual ───────────────────────────────────────────
-function EntregaCard({ entrega, isRedmine }: { entrega: any; isRedmine: boolean }) {
+function EntregaCard({ entrega, isRedmine, onSelect }: { entrega: any; isRedmine: boolean; onSelect?: (i: any) => void }) {
   const impact = IMPACT_CONFIG[entrega.impacto] || IMPACT_CONFIG['Médio']
   const icon   = ICON_MAP[entrega.icone] || <CheckSquare size={20} />
   const cor    = entrega.cor || '#8b5cf6'
@@ -49,7 +49,8 @@ function EntregaCard({ entrega, isRedmine }: { entrega: any; isRedmine: boolean 
   return (
     <div
       className="rounded-2xl relative overflow-hidden transition-all duration-300 flex flex-col"
-      style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', padding: '18px 20px' }}
+      style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', padding: '18px 20px', cursor: onSelect ? 'pointer' : 'default' }}
+      onClick={() => onSelect && onSelect(entrega)}
       onMouseEnter={(e) => {
         e.currentTarget.style.borderColor = `${cor}55`
         e.currentTarget.style.boxShadow   = '0 8px 28px rgba(0,0,0,0.3)'
@@ -168,6 +169,7 @@ export function EntregasPage() {
   const [error, setError]             = useState<string | null>(null)
   const [filtro, setFiltro]           = useState({ projeto: '', tracker: '', impacto: '' })
 
+  const [selectedItem, setSelectedItem] = useState<any>(null)
   useEffect(() => {
     setLoading(true)
     const params = { limit: 50, ...toQueryParams() }
@@ -294,18 +296,88 @@ export function EntregasPage() {
                     </span>
                   </div>
                   <div className="grid gap-3.5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))' }}>
-                    {items.map((e: any) => <EntregaCard key={e.id || e.titulo} entrega={e} isRedmine={true} />)}
+                    {items.map((e: any) => <EntregaCard onSelect={setSelectedItem} key={e.id || e.titulo} entrega={e} isRedmine={true} />)}
                   </div>
                 </div>
               ))
             })()
           ) : (
             <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))' }}>
-              {entregas.map((e: any) => <EntregaCard key={e.titulo} entrega={e} isRedmine={false} />)}
+              {entregas.map((e: any) => <EntregaCard onSelect={setSelectedItem} key={e.titulo} entrega={e} isRedmine={false} />)}
             </div>
           )}
         </>
       )}
+      {selectedItem && <TicketModal item={selectedItem} onClose={() => setSelectedItem(null)} />}
+    </div>
+  )
+}
+
+
+function TicketModal({ item, onClose }: { item: any; onClose: () => void }) {
+  const sc: Record<string,string> = { 'Fazendo':'#3b82f6','A testar':'#8b5cf6','Aguardando Build':'#f59e0b','A fazer':'#6b7280','Concluída':'#10b981','Rejeitado':'#ef4444' }
+  const pc: Record<string,string> = { 'Urgente':'#ef4444','Alta':'#f59e0b','Normal':'#3b82f6','Baixa':'#6b7280' }
+  const statusColor = sc[item.status] || '#8b5cf6'
+  const prioColor   = pc[item.prioridade] || '#6b7280'
+  return (
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4" onClick={onClose}>
+      <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)' }} />
+      <div className="relative z-10 w-full" style={{ maxWidth: 600, maxHeight: '85vh', overflowY: 'auto', background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-xl)' }} onClick={e => e.stopPropagation()}>
+        <div className="p-5 pb-4" style={{ borderBottom: '1px solid var(--border)' }}>
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-2 flex-wrap">
+                <span style={{ fontSize: '0.7rem', fontWeight: 700, padding: '2px 8px', borderRadius: 99, background: `${statusColor}20`, color: statusColor, border: `1px solid ${statusColor}40` }}>{item.status}</span>
+                {item.prioridade && <span style={{ fontSize: '0.7rem', fontWeight: 600, padding: '2px 8px', borderRadius: 99, background: `${prioColor}15`, color: prioColor }}>{item.prioridade}</span>}
+                {item.tipo && <span style={{ fontSize: '0.7rem', padding: '2px 8px', borderRadius: 99, background: 'var(--bg-elevated)', color: 'var(--text-muted)' }}>{item.tipo}</span>}
+              </div>
+              <div style={{ fontSize: '1rem', fontWeight: 700, lineHeight: 1.3 }}>{item.titulo}</div>
+            </div>
+            <button onClick={onClose} style={{ width: 28, height: 28, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 8, cursor: 'pointer', color: 'var(--text-secondary)', fontSize: 16 }}>✕</button>
+          </div>
+        </div>
+        <div className="p-5 flex flex-col gap-4">
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              { label: 'Projeto',     value: item.projeto || item.categoria },
+              { label: 'Responsável', value: item.responsavel },
+              { label: 'Prazo',       value: item.prazo || item.previsao || '—' },
+              { label: 'Estimativa',  value: item.horas ? `${item.horas}h` : '—' },
+              { label: 'Progresso',   value: item.progresso != null ? `${item.progresso}%` : '—' },
+              { label: 'Sprint',      value: item.sprint || item.versao || '—' },
+            ].filter(x => x.value && x.value !== '—').map(({ label, value }) => (
+              <div key={label} className="rounded-xl p-3" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
+                <div style={{ fontSize: '0.62rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', marginBottom: 4 }}>{label}</div>
+                <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>{value}</div>
+              </div>
+            ))}
+          </div>
+          {item.progresso > 0 && (
+            <div>
+              <div className="flex justify-between mb-1.5">
+                <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Progresso</span>
+                <span style={{ fontSize: '0.72rem', fontWeight: 700, color: statusColor }}>{item.progresso}%</span>
+              </div>
+              <div style={{ height: 8, borderRadius: 4, background: 'var(--bg-elevated)', overflow: 'hidden' }}>
+                <div style={{ height: '100%', width: `${item.progresso}%`, background: statusColor, borderRadius: 4 }} />
+              </div>
+            </div>
+          )}
+          {item.descricao && item.descricao !== '—' && (
+            <div className="rounded-xl p-4" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
+              <div style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', marginBottom: 8 }}>Descrição</div>
+              <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{item.descricao}</div>
+            </div>
+          )}
+          {item.tags?.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {item.tags.map((t: string) => (
+                <span key={t} style={{ fontSize: '0.68rem', padding: '2px 8px', borderRadius: 99, background: 'var(--bg-elevated)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>{t}</span>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   )
 }
