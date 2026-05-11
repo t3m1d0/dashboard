@@ -194,31 +194,20 @@ export function OverviewPage() {
 
           <div className="grid grid-cols-2 gap-3">
             {[
-              { label: 'Franquias Suportadas', value: ve.franquiasSuportadas, color: '#8b5cf6', suffix: '' },
-              { label: 'Disponibilidade', value: ve.disponibilidadeSistemas, color: '#10b981', suffix: '%' },
-              { label: 'Incidentes Evitados', value: ve.incidentesCriticosEvitados, color: '#3b82f6', suffix: '' },
-              { label: 'Horas Economizadas', value: ve.horasEconomizidasAutomacao, color: '#f59e0b', suffix: 'h' },
+              { label: 'Franquias Suportadas',    value: ve.franquiasSuportadas,           color: '#8b5cf6', suffix: '' },
+              { label: 'Disponibilidade',          value: ve.disponibilidadeSistemas,       color: '#10b981', suffix: '%' },
+              { label: 'Incidentes Evitados',      value: ve.incidentesCriticosEvitados,    color: '#3b82f6', suffix: '' },
+              { label: 'Horas Economizadas',       value: ve.horasEconomizidasAutomacao,    color: '#f59e0b', suffix: 'h' },
             ].map((item) => (
               <div
                 key={item.label}
                 className="rounded-xl p-3 text-center"
                 style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
               >
-                <div
-                  style={{
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: '1.5rem',
-                    fontWeight: 700,
-                    color: item.color,
-                    lineHeight: 1,
-                    marginBottom: 4,
-                  }}
-                >
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '1.5rem', fontWeight: 700, color: item.color, lineHeight: 1, marginBottom: 4 }}>
                   {item.value}{item.suffix}
                 </div>
-                <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>
-                  {item.label}
-                </div>
+                <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>{item.label}</div>
               </div>
             ))}
           </div>
@@ -237,13 +226,69 @@ export function OverviewPage() {
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: '1.3rem', fontWeight: 700, color: '#fbbf24' }}>
                 {vg.satisfacaoInterna.valor}<span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>/5</span>
               </div>
-              <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary)' }}>
-                Satisfação Interna
-              </div>
+              <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary)' }}>Satisfação Interna</div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Por Categoria */}
+      {data.sustentacao?.porCategoria?.length > 0 && (
+        <div className="rounded-2xl overflow-hidden mt-4" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+          <div className="px-5 py-4" style={{ borderBottom: '1px solid var(--border)' }}>
+            <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>Chamados por Categoria</div>
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: 2 }}>Volume e SLA por categoria no período</div>
+          </div>
+          <div className="overflow-x-auto">
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead><tr>
+                {['Categoria','Total','Resolvidos','SLA %'].map(h => (
+                  <th key={h} style={{ padding: '8px 16px', textAlign: 'left', fontSize: '0.62rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', borderBottom: '1px solid var(--border)', fontWeight: 600, background: 'var(--bg-elevated)', whiteSpace: 'nowrap' }}>{h}</th>
+                ))}
+              </tr></thead>
+              <tbody>
+                {data.sustentacao.porCategoria.map((c: any) => (
+                  <tr key={c.categoria} onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bg-elevated)' }} onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '' }}>
+                    <td style={{ padding: '8px 16px', fontSize: '0.82rem', fontWeight: 500 }}>{c.categoria}</td>
+                    <td style={{ padding: '8px 16px', fontFamily: 'var(--font-mono)', fontSize: '0.78rem', color: '#8b5cf6', fontWeight: 600 }}>{c.total}</td>
+                    <td style={{ padding: '8px 16px', fontFamily: 'var(--font-mono)', fontSize: '0.78rem', color: '#10b981' }}>{c.resolvidos}</td>
+                    <td style={{ padding: '8px 16px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{ flex: 1, height: 6, borderRadius: 3, background: 'var(--bg-elevated)', overflow: 'hidden' }}>
+                          <div style={{ height: '100%', width: `${c.sla}%`, background: c.sla >= 95 ? '#10b981' : c.sla >= 80 ? '#f59e0b' : '#ef4444', borderRadius: 3, transition: 'width 0.5s' }} />
+                        </div>
+                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.72rem', color: c.sla >= 95 ? '#10b981' : c.sla >= 80 ? '#f59e0b' : '#ef4444', fontWeight: 600, minWidth: 36 }}>{c.sla}%</span>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Top Assuntos */}
+      {data.sustentacao?.top15Assuntos?.length > 0 && (
+        <div className="rounded-2xl p-5 mt-4" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+          <div style={{ fontSize: '0.85rem', fontWeight: 600, marginBottom: 14 }}>Top Assuntos</div>
+          <div className="flex flex-col gap-2">
+            {data.sustentacao.top15Assuntos.slice(0,10).map((a: any, i: number) => {
+              const max = data.sustentacao.top15Assuntos[0]?.total || 1
+              return (
+                <div key={a.assunto} className="flex items-center gap-3">
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem', color: 'var(--text-muted)', minWidth: 16, textAlign: 'right' }}>{i+1}</span>
+                  <div style={{ flex: 1, height: 22, borderRadius: 6, background: 'var(--bg-elevated)', overflow: 'hidden', position: 'relative' }}>
+                    <div style={{ height: '100%', width: `${(a.total/max)*100}%`, background: 'rgba(139,92,246,0.3)', borderRadius: 6, transition: 'width 0.5s' }} />
+                    <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: '0.72rem', color: 'var(--text-primary)', fontWeight: 500 }}>{a.assunto}</span>
+                  </div>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: '#8b5cf6', fontWeight: 700, minWidth: 28, textAlign: 'right' }}>{a.total}</span>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
