@@ -22,9 +22,9 @@ import {
 const GenteContext = createContext<any>({})
 
 // ── Formatadores ──────────────────────────────────────────────
-const fmtBRL = (v: number) =>
-  v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2, maximumFractionDigits: 2 })
-const fmtNum = (v: number) => Math.round(v).toLocaleString('pt-BR')
+const fmtBRL = (v: any) =>
+  (Number(v) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2, maximumFractionDigits: 2 })
+const fmtNum = (v: any) => Math.round(Number(v) || 0).toLocaleString('pt-BR')
 
 const MESES = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
 const CORES = ['#06b6d4','#3b82f6','#8b5cf6','#10b981','#f59e0b','#ef4444','#ec4899','#f97316','#84cc16','#a78bfa']
@@ -421,7 +421,7 @@ export function GentePage() {
                 const active = mesSel === mes
                 return (
                   <button key={c.competencia} onClick={() => setMesSel(mes)}
-                    title={`${c.colab} colaboradores · ${c.massa.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0 })}`}
+                    title={`${c.colab} colaboradores · ${(c.massa||0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0 })}`}
                     style={{ padding: '5px 14px', borderRadius: 8, fontSize: '0.78rem', fontWeight: 600, background: active ? '#06b6d4' : 'var(--bg-card)', color: active ? '#0a0a0a' : 'var(--text-secondary)', border: `1px solid ${active ? '#06b6d4' : 'var(--border)'}`, cursor: 'pointer', fontFamily: 'var(--font-body)', transition: 'all 0.15s' }}>
                     {c.mes_nome || MESES[mes]}
                   </button>
@@ -938,7 +938,7 @@ function OverviewView({ stats, overview, competenciaSel }: any) {
       {/* ── CONSOLIDADO ── */}
       <Section title="Consolidado — CSC + Filiais" color="#06b6d4">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
-          <KpiCard label="Total Colaboradores" value={cv.total_colaboradores?.toLocaleString('pt-BR')} color="#06b6d4" bold />
+          <KpiCard label="Total Colaboradores" value={(cv.total_colaboradores||0).toLocaleString('pt-BR')} color="#06b6d4" bold />
           <KpiCard label="Total Proventos"     value={fmtBRL(cv.total_proventos)}  color="#10b981" bold />
           <KpiCard label="Total Descontos"     value={fmtBRL(cv.total_descontos)}  color="#ef4444" bold />
           <KpiCard label="Total Líquido"       value={fmtBRL(cv.total_liquido)}    color="#3b82f6" bold />
@@ -956,7 +956,7 @@ function OverviewView({ stats, overview, competenciaSel }: any) {
       {fk.total_colaboradores > 0 && (
         <Section title="Folha de Pagamento — CSC" color="#8b5cf6">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
-            <KpiCard label="Colaboradores CSC"  value={fk.total_colaboradores?.toLocaleString('pt-BR')} color="#8b5cf6" />
+            <KpiCard label="Colaboradores CSC"  value={(fk.total_colaboradores||0).toLocaleString('pt-BR')} color="#8b5cf6" />
             <KpiCard label="Massa Salarial"     value={fmtBRL(fk.massa_salarial)}   color="#10b981" />
             <KpiCard label="Total Bruto"        value={fmtBRL(fk.total_bruto)}      color="#f59e0b" />
             <KpiCard label="Total Líquido"      value={fmtBRL(fk.total_liquido)}    color="#3b82f6" />
@@ -999,7 +999,7 @@ function OverviewView({ stats, overview, competenciaSel }: any) {
       {ck.total_funcionarios > 0 && (
         <Section title="Conferência de Folha — Filiais" color="#f59e0b">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
-            <KpiCard label="Colaboradores Filiais" value={ck.total_funcionarios?.toLocaleString('pt-BR')} color="#f59e0b" />
+            <KpiCard label="Colaboradores Filiais" value={(ck.total_funcionarios||0).toLocaleString('pt-BR')} color="#f59e0b" />
             <KpiCard label="Total Proventos"        value={fmtBRL(ck.total_proventos)}   color="#10b981" />
             <KpiCard label="Total Descontos"        value={fmtBRL(ck.total_descontos)}   color="#ef4444" />
             <KpiCard label="Total Líquido"          value={fmtBRL(ck.total_liquido)}     color="#3b82f6" />
