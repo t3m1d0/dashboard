@@ -22,9 +22,9 @@ import {
 const GenteContext = createContext<any>({})
 
 // ── Formatadores ──────────────────────────────────────────────
-const fmtBRL = (v: number) =>
-  v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2, maximumFractionDigits: 2 })
-const fmtNum = (v: number) => Math.round(v).toLocaleString('pt-BR')
+const fmtBRL = (v: any) =>
+  (Number(v) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2, maximumFractionDigits: 2 })
+const fmtNum = (v: any) => Math.round(Number(v) || 0).toLocaleString('pt-BR')
 
 const MESES = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
 const CORES = ['#06b6d4','#3b82f6','#8b5cf6','#10b981','#f59e0b','#ef4444','#ec4899','#f97316','#84cc16','#a78bfa']
