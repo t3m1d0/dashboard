@@ -1,0 +1,150 @@
+From 0d8818d667c198d649d165119266926af1731177 Mon Sep 17 00:00:00 2001
+From: Muniz CSC Deploy <deploy@muniz.com>
+Date: Mon, 11 May 2026 22:59:47 +0000
+Subject: [PATCH] =?UTF-8?q?fix:=20usePeriodo=20compat=C3=ADvel=20com=20sto?=
+ =?UTF-8?q?re=20atual=20+=20RoadmapPage=20carrega=20sem=20deps=20de=20per?=
+ =?UTF-8?q?=C3=ADodo?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+- usePeriodo.ts: usa techSubSection/periodos/setPeriodoSecao do store (não periodo/setPeriodo inexistentes)
+- RoadmapPage.tsx: useEffect sem deps de período para sempre carregar dados do Redmine ao montar
+---
+ .../versions/0010_gente_colaboradores_v2.py   | 51 +++++++++++++++++++
+ dashboard/src/hooks/usePeriodo.ts             | 43 ++--------------
+ dashboard/src/pages/RoadmapPage.tsx           |  5 +-
+ 3 files changed, 57 insertions(+), 42 deletions(-)
+ create mode 100644 backend/migrations/versions/0010_gente_colaboradores_v2.py
+
+diff --git a/backend/migrations/versions/0010_gente_colaboradores_v2.py b/backend/migrations/versions/0010_gente_colaboradores_v2.py
+new file mode 100644
+index 0000000..e586d69
+--- /dev/null
++++ b/backend/migrations/versions/0010_gente_colaboradores_v2.py
+@@ -0,0 +1,51 @@
++"""gente_colaboradores new fields
++
++Revision ID: 0010_gente_colaboradores_v2
++Revises: 0009_lojas
++Create Date: 2026-05-10
++"""
++from alembic import op
++import sqlalchemy as sa
++
++revision = '0010_gente_colaboradores_v2'
++down_revision = '0009_lojas'
++branch_labels = None
++depends_on = None
++
++
++def upgrade() -> None:
++    conn = op.get_bind()
++    from sqlalchemy import inspect, text
++    inspector = inspect(conn)
++    existing = [c['name'] for c in inspector.get_columns('gente_colaboradores')]
++
++    with op.batch_alter_table('gente_colaboradores') as batch_op:
++        if 'salario_bruto' not in existing:
++            batch_op.add_column(sa.Column('salario_bruto',        sa.Float(), nullable=True))
++        if 'salario_liquido' not in existing:
++            batch_op.add_column(sa.Column('salario_liquido',      sa.Float(), nullable=True))
++        if 'ultima_competencia' not in existing:
++            batch_op.add_column(sa.Column('ultima_competencia',   sa.String(20), nullable=True))
++        if 'primeira_competencia' not in existing:
++            batch_op.add_column(sa.Column('primeira_competencia', sa.String(20), nullable=True))
++
++    # Indexes
++    existing_idx = [i['name'] for i in inspector.get_indexes('gente_colaboradores')]
++    with op.batch_alter_table('gente_colaboradores') as batch_op:
++        if 'ix_gc_ultima_competencia' not in existing_idx:
++            batch_op.create_index('ix_gc_ultima_competencia', ['ultima_competencia'])
++        if 'ix_gc_cargo' not in existing_idx:
++            batch_op.create_index('ix_gc_cargo', ['cargo'])
++        if 'ix_gc_empresa_cargo' not in existing_idx:
++            batch_op.create_index('ix_gc_empresa_cargo', ['empresa_id', 'cargo'])
++
++
++def downgrade() -> None:
++    with op.batch_alter_table('gente_colaboradores') as batch_op:
++        batch_op.drop_index('ix_gc_empresa_cargo')
++        batch_op.drop_index('ix_gc_cargo')
++        batch_op.drop_index('ix_gc_ultima_competencia')
++        batch_op.drop_column('primeira_competencia')
++        batch_op.drop_column('ultima_competencia')
++        batch_op.drop_column('salario_liquido')
++        batch_op.drop_column('salario_bruto')
+diff --git a/dashboard/src/hooks/usePeriodo.ts b/dashboard/src/hooks/usePeriodo.ts
+index 43a64f9..6cd3b4f 100644
+--- a/dashboard/src/hooks/usePeriodo.ts
++++ b/dashboard/src/hooks/usePeriodo.ts
+@@ -1,43 +1,8 @@
+-// ============================================================
+-// usePeriodo — Hook para filtro de período global
+-// ============================================================
+ import { useDashboardStore } from '@/store'
+ 
+-const MESES = [
+-  'Janeiro','Fevereiro','Março','Abril','Maio','Junho',
+-  'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'
+-]
+-
+ export function usePeriodo() {
+-  const { periodo, setPeriodo } = useDashboardStore()
+-
+-  const label = periodo.mes === 0
+-    ? `${periodo.ano} — Todos os meses`
+-    : `${MESES[periodo.mes - 1]} de ${periodo.ano}`
+-
+-  const periodoParam = periodo.mes === 0
+-    ? { ano: periodo.ano }
+-    : { mes: periodo.mes, ano: periodo.ano }
+-
+-  // Filtra array de itens por campo de data (YYYY-MM-DD ou ISO)
+-  const filtrarPorData = <T extends Record<string, any>>(
+-    items: T[],
+-    campoData: keyof T
+-  ): T[] => {
+-    if (periodo.mes === 0) {
+-      return items.filter(item => {
+-        const d = item[campoData] as string
+-        if (!d) return true
+-        return new Date(d).getFullYear() === periodo.ano
+-      })
+-    }
+-    return items.filter(item => {
+-      const d = item[campoData] as string
+-      if (!d) return true
+-      const dt = new Date(d)
+-      return dt.getFullYear() === periodo.ano && dt.getMonth() + 1 === periodo.mes
+-    })
+-  }
+-
+-  return { periodo, setPeriodo, label, periodoParam, filtrarPorData }
++  const { techSubSection, periodos, setPeriodoSecao } = useDashboardStore()
++  const periodo = periodos[techSubSection as keyof typeof periodos] || { tipo: 'mes', label: 'Este mês' }
++  const setPeriodo = (p: any) => setPeriodoSecao(techSubSection as any, p)
++  return { periodo, setPeriodo }
+ }
+diff --git a/dashboard/src/pages/RoadmapPage.tsx b/dashboard/src/pages/RoadmapPage.tsx
+index a055e13..5712903 100644
+--- a/dashboard/src/pages/RoadmapPage.tsx
++++ b/dashboard/src/pages/RoadmapPage.tsx
+@@ -158,12 +158,11 @@ export function RoadmapPage() {
+ 
+   useEffect(() => {
+     setLoading(true)
+-    const params = toQueryParams()
+-    RedmineEntregasAPI.getRoadmap(Object.keys(params).length > 0 ? params : undefined)
++    RedmineEntregasAPI.getRoadmap()
+       .then(setRedmineData)
+       .catch(() => setRedmineData({ configurado: false, items: [], sprints: [] }))
+       .finally(() => setLoading(false))
+-  }, [periodo.mes, periodo.ano, periodo.dataInicio, periodo.dataFim, periodo.modo])
++  }, [])
+ 
+   const isRedmine   = redmineData?.configurado === true
+   const allRoadmap  = isRedmine ? (redmineData?.items || []) : data.roadmap
+-- 
+2.43.0
+

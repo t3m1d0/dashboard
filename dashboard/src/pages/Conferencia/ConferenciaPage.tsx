@@ -16,6 +16,8 @@ import {
   ResponsiveContainer, Cell
 } from 'recharts'
 
+const fmtFilial = (s: string) => (s||'').replace('MUNIZ AUTO CENTER - ','Muniz - ').replace('MUNIZ AUTO CENTER – ','Muniz - ').replace('MUNIZ AUTO CENTER- ','Muniz - ')
+
 const fmtBRL = (v: number) =>
   (v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2, maximumFractionDigits: 2 })
 const fmtNum = (v: number) => Math.round(v || 0).toLocaleString('pt-BR')
@@ -379,7 +381,7 @@ export function ConferenciaPage() {
                         style={{ cursor: 'pointer', background: filialSel === f.filial ? 'rgba(245,158,11,0.06)' : '' }}
                         onMouseEnter={e => { if (filialSel !== f.filial) (e.currentTarget as HTMLElement).style.background = 'var(--bg-elevated)' }}
                         onMouseLeave={e => { if (filialSel !== f.filial) (e.currentTarget as HTMLElement).style.background = '' }}>
-                        <td style={{ padding: '7px 10px', fontSize: '0.72rem', maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={f.filial}>{f.filial}</td>
+                        <td style={{ padding: '7px 10px', fontSize: '0.72rem', maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={f.filial}>{fmtFilial(f.filial)}</td>
                         <td style={{ padding: '7px 10px', fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: '#f59e0b', textAlign: 'center' }}>{f.funcionarios}</td>
                         <td style={{ padding: '7px 10px', fontFamily: 'var(--font-mono)', fontSize: '0.7rem' }}>{fmtBRL(f.proventos)}</td>
                         <td style={{ padding: '7px 10px', fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: '#3b82f6' }}>{fmtBRL(f.liquido)}</td>
@@ -562,7 +564,7 @@ function ColabView({ linhas, page, setPage, busca, setBusca }: any) {
                     onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '' }}>
                     <td style={{ padding: '7px 12px', fontSize: '0.8rem', fontWeight: 500, maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.nome}</td>
                     <td style={{ padding: '7px 12px', fontSize: '0.72rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>{r.cargo}</td>
-                    <td style={{ padding: '7px 12px', fontSize: '0.7rem', color: 'var(--text-muted)', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.filial_nome}</td>
+                    <td style={{ padding: '7px 12px', fontSize: '0.7rem', color: 'var(--text-muted)', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{fmtFilial(r.filial_nome)}</td>
                     <td style={{ padding: '7px 12px', fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--text-muted)' }}>{r.dt_admissao}</td>
                     <td style={{ padding: '7px 12px', fontFamily: 'var(--font-mono)', fontSize: '0.72rem', color: '#f59e0b' }}>{fmtBRL(r.total_proventos)}</td>
                     <td style={{ padding: '7px 12px', fontFamily: 'var(--font-mono)', fontSize: '0.72rem', color: '#ef4444' }}>{r.inss > 0 ? fmtBRL(r.inss) : '—'}</td>

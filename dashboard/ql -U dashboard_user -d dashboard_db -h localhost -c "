@@ -1,0 +1,9 @@
+           nome            |    cargo    | total_proventos |  inss  | total_descontos | vale_func | liquido 
+---------------------------+-------------+-----------------+--------+-----------------+-----------+---------
+ ALEX SANDER DE PAULA      | Borracheiro |            2251 | 178.27 |         1078.27 |       900 | 1172.73
+ ALEXSANDRO MELO           | Mecânico    |            2251 | 178.27 |         1078.27 |       900 | 1172.73
+ ANDERSON CARLOS DOS       | Mecânico    |          2702.5 | 178.27 |         1408.27 |       900 | 1294.23
+ Alice Silva Dias          | Vendedor    |         9400.25 | 147.13 |         3023.09 |         0 | 6377.16
+ André Luiz Martins Simões | Mecânico    |            1905 | 147.13 |          747.13 |         0 | 1157.87
+(5 rows)
+
