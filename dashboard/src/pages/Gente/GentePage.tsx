@@ -285,6 +285,8 @@ export function GentePage() {
   useEffect(() => {
     loadCompetencias()
     GenteAPI.getFiliais().then(setFiliaisConf).catch(() => {})
+    loadColabs()
+    loadTurnover()
   }, [])
 
   const loadOverview = useCallback(async () => {
@@ -314,6 +316,10 @@ export function GentePage() {
       setMesSel(0)
       await loadCompetencias()
       await loadStats()
+      await loadColabs()
+      await loadTurnover()
+      await loadOverview()
+      GenteAPI.getFiliais().then(setFiliaisConf).catch(()=>{})
     } catch (e: any) { alert('Erro: ' + e.message) }
     finally { setDeleting(false) }
   }
@@ -464,7 +470,7 @@ export function GentePage() {
       {/* Content */}
       {renderContent()}
 
-      {importOpen && genteSubSection !== 'conferencia' && <ImportModal onClose={() => setImportOpen(false)} onSuccess={() => { loadCompetencias(); loadStats() }} />}
+      {importOpen && genteSubSection !== 'conferencia' && <ImportModal onClose={() => setImportOpen(false)} onSuccess={() => { loadCompetencias(); loadStats(); loadColabs(); loadTurnover(); loadOverview(); GenteAPI.getFiliais().then(setFiliaisConf).catch(()=>{}) }} />}
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   )
