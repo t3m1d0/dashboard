@@ -1,7 +1,7 @@
 // ============================================================
 // pages/Gente/GentePage.tsx — Módulo Gente e Gestão
 // ============================================================
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useContext, createContext, useCallback, useRef } from 'react'
 import { useDashboardStore } from '@/store'
 import { GenteAPI } from '@/services/api'
 import { ConferenciaPage } from '@/pages/Conferencia/ConferenciaPage'
@@ -17,6 +17,9 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, Legend
 } from 'recharts'
+
+// ── Context para compartilhar estado entre componentes
+const GenteContext = createContext<any>({})
 
 // ── Formatadores ──────────────────────────────────────────────
 const fmtBRL = (v: number) =>
@@ -1059,5 +1062,7 @@ function OverviewView({ stats, overview, competenciaSel }: any) {
     </div>
   )
 }
+
+// ── Context para compartilhar estado entre componentes
 
 // ── Formatadores ──────────────────────────────────────────────
